@@ -1,0 +1,14 @@
+node_modules/
+
+# Build outputs
+dist/
+lib/
+build/
+
+# Test and typecheck output
+coverage/
+*.tsbuildinfo
+
+# Local noise
+.DS_Store
+*.log
