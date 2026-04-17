@@ -1,4 +1,5 @@
-import { Grid, GridItem, Screen } from "eudonia";
+import { Grid, GridItem, Screen } from "eudonia/layout";
+import { StatCard } from "eudonia/components";
 
 const BOARD_COLUMNS = ["1fr", "2fr", "1fr", "1fr"] as const;
 const BOARD_ROWS = [24, "1fr", "1fr", "1fr", "1fr", "1fr", "1fr", "1fr"] as const;
@@ -44,6 +45,14 @@ const MANAGERS = [
   { name: "Valery", value: "47.2%", trendClass: "trend-line--downward" },
 ] as const;
 
+function toggleTheme() {
+  const el = document.documentElement;
+  const current = el.dataset.theme;
+  const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  const effective = current ?? system;
+  el.dataset.theme = effective === "dark" ? "light" : "dark";
+}
+
 export default function App() {
   return (
     <Screen className="scorecard-page">
@@ -52,6 +61,7 @@ export default function App() {
         className="scorecard-board"
         columns={BOARD_COLUMNS}
         gap={BOARD_GAP}
+        padding={5}
         rows={BOARD_ROWS}
       >
         <GridItem className="scorecard-toolbar" column={1} columnSpan={4} row={1}>
@@ -59,9 +69,8 @@ export default function App() {
         </GridItem>
 
         {KPIS.map((kpi) => (
-          <GridItem className="tile tile--kpi" column={1} key={kpi.label} row={kpi.row}>
-            <h2 className="tile-title">{kpi.label}</h2>
-            <div className="kpi-value">{kpi.value}</div>
+          <GridItem column={1} key={kpi.label} row={kpi.row}>
+            <StatCard title={kpi.label} value={kpi.value} className="kpi-tile" />
           </GridItem>
         ))}
 
@@ -253,6 +262,9 @@ export default function App() {
           </div>
         </GridItem>
       </Grid>
+      <button className="theme-toggle" onClick={toggleTheme} type="button">
+        💡
+      </button>
     </Screen>
   );
 }

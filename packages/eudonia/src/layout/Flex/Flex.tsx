@@ -7,6 +7,7 @@ type FlexDirection = "row" | "column";
 export interface FlexProps extends ComponentPropsWithoutRef<"div"> {
   direction?: FlexDirection;
   gap?: LayoutLength;
+  padding?: LayoutLength;
   width?: CSSProperties["width"];
   height?: CSSProperties["height"];
 }
@@ -17,6 +18,7 @@ export function Flex({
   direction = "row",
   gap = 0,
   height = "100%",
+  padding = 0,
   style,
   width = "100%",
   ...props
@@ -30,10 +32,12 @@ export function Flex({
         display: "flex",
         flexDirection: direction,
         gap: toCssLength(gap),
+        padding: toCssLength(padding),
         width,
         height,
         minWidth: "0px",
         minHeight: "0px",
+        boxSizing: "border-box",
       }}
     >
       {children}

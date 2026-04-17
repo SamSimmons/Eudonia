@@ -1,4 +1,4 @@
-import { Screen } from "eudonia";
+import { Screen } from "eudonia/layout";
 
 export function ScreenFill() {
   return (

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Screen, Flex, FlexItem } from "eudonia";
+import { Screen, Flex, FlexItem } from "eudonia/layout";
 import { installPerfMeasurement } from "../perf/measure";
 
 /**

@@ -8,6 +8,7 @@ export interface GridProps extends ComponentPropsWithoutRef<"div"> {
   columns?: readonly GridTrack[];
   rows?: readonly GridTrack[];
   gap?: LayoutLength;
+  padding?: LayoutLength;
   width?: CSSProperties["width"];
   height?: CSSProperties["height"];
 }
@@ -22,6 +23,7 @@ export function Grid({
   columns = ["fluid"],
   gap = 0,
   height = "100%",
+  padding = 0,
   rows,
   style,
   width = "100%",
@@ -37,10 +39,12 @@ export function Grid({
         gridTemplateColumns: columns.map(toCssGridTrack).join(" "),
         gridTemplateRows: rows?.map(toCssGridTrack).join(" "),
         gap: toCssLength(gap),
+        padding: toCssLength(padding),
         width,
         height,
         minWidth: "0px",
         minHeight: "0px",
+        boxSizing: "border-box",
       }}
     >
       {children}
