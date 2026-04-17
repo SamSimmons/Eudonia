@@ -2,33 +2,40 @@ import type { CSSProperties, ComponentPropsWithoutRef } from "react";
 
 import { toCssLength, type LayoutLength } from "../shared/toCssLength";
 
-type FlexDirection = "row" | "column";
+export type GridTrack = LayoutLength | "fluid";
 
-export interface FlexProps extends ComponentPropsWithoutRef<"div"> {
-  direction?: FlexDirection;
+export interface GridProps extends ComponentPropsWithoutRef<"div"> {
+  columns?: readonly GridTrack[];
+  rows?: readonly GridTrack[];
   gap?: LayoutLength;
   width?: CSSProperties["width"];
   height?: CSSProperties["height"];
 }
 
-export function Flex({
+function toCssGridTrack(track: GridTrack) {
+  return track === "fluid" ? "minmax(0px, 1fr)" : toCssLength(track);
+}
+
+export function Grid({
   children,
   className = "",
-  direction = "row",
+  columns = ["fluid"],
   gap = 0,
   height = "100%",
+  rows,
   style,
   width = "100%",
   ...props
-}: FlexProps) {
+}: GridProps) {
   return (
     <div
       {...props}
-      className={`eudonia-flex ${className}`}
+      className={`eudonia-grid ${className}`}
       style={{
         ...style,
-        display: "flex",
-        flexDirection: direction,
+        display: "grid",
+        gridTemplateColumns: columns.map(toCssGridTrack).join(" "),
+        gridTemplateRows: rows?.map(toCssGridTrack).join(" "),
         gap: toCssLength(gap),
         width,
         height,
