@@ -1,0 +1,25 @@
+/* Optional theme tokens for eudonia charts.
+   Import once at the app root: `import "eudonia/theme.css"`.
+   Override any token at :root, on a theme container, or inline on the chart. */
+
+:root {
+  --eudonia-chart-line: oklch(0.55 0.15 230);
+  --eudonia-chart-axis: oklch(0.5 0 0);
+  --eudonia-chart-grid: oklch(0.9 0 0);
+  --eudonia-chart-label: oklch(0.42 0 0);
+  --eudonia-chart-label-size: 0.7rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --eudonia-chart-axis: oklch(0.65 0 0);
+    --eudonia-chart-grid: oklch(0.3 0 0);
+    --eudonia-chart-label: oklch(0.7 0 0);
+  }
+}
+
+[data-theme="dark"] {
+  --eudonia-chart-axis: oklch(0.65 0 0);
+  --eudonia-chart-grid: oklch(0.3 0 0);
+  --eudonia-chart-label: oklch(0.7 0 0);
+}

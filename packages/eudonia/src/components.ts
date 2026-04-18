@@ -1,1 +1,10 @@
 export { StatCard } from "./components/StatCard/StatCard";
+export { Chart, type ChartProps } from "./components/Chart/Chart";
+export type { ChartDatum, ChartMargin } from "./components/Chart/context";
+export type { ChartXType } from "./components/Chart/scales";
+export { Line, type LineProps } from "./components/Line/Line";
+export { XAxis, type XAxisProps } from "./components/Axis/XAxis";
+export { YAxis, type YAxisProps } from "./components/Axis/YAxis";
+export { Gridlines, type GridlinesProps } from "./components/Gridlines/Gridlines";
+export { ReferenceLine, type ReferenceLineProps } from "./components/ReferenceLine/ReferenceLine";
+export { Sparkline, type SparklineProps } from "./components/Sparkline/Sparkline";

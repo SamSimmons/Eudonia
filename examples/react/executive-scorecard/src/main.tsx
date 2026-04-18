@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import App from "./App";
 import "eudonia/components.css";
+import "eudonia/theme.css";
 import "./styles.css";
 
 const root = document.getElementById("root");

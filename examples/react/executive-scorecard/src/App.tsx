@@ -1,5 +1,14 @@
 import { Grid, GridItem, Screen } from "eudonia/layout";
-import { StatCard } from "eudonia/components";
+import {
+  Chart,
+  Gridlines,
+  Line,
+  ReferenceLine,
+  Sparkline,
+  StatCard,
+  XAxis,
+  YAxis,
+} from "eudonia/components";
 
 const BOARD_COLUMNS = ["1fr", "2fr", "1fr", "1fr"] as const;
 const BOARD_ROWS = [24, "1fr", "1fr", "1fr", "1fr", "1fr", "1fr", "1fr"] as const;
@@ -38,12 +47,32 @@ const TARGETS = [
 ] as const;
 
 const MANAGERS = [
-  { name: "Andrew", value: "45%", trendClass: "trend-line--upward" },
-  { name: "Annelie", value: "37.8%", trendClass: "trend-line--steady" },
-  { name: "Carlos", value: "38.5%", trendClass: "trend-line--rebound" },
-  { name: "Tina", value: "53.8%", trendClass: "trend-line--steady" },
-  { name: "Valery", value: "47.2%", trendClass: "trend-line--downward" },
+  { name: "Andrew", value: "45%", trend: [38, 41, 39, 44, 42, 46, 45, 48, 47, 50, 49, 52] },
+  { name: "Annelie", value: "37.8%", trend: [36, 37, 36, 36, 37, 37, 38, 37, 38, 38, 38, 38] },
+  { name: "Carlos", value: "38.5%", trend: [42, 40, 36, 32, 30, 29, 31, 34, 37, 38, 39, 39] },
+  { name: "Tina", value: "53.8%", trend: [53, 54, 53, 54, 54, 53, 54, 54, 53, 54, 54, 54] },
+  { name: "Valery", value: "47.2%", trend: [58, 56, 55, 53, 52, 50, 49, 49, 48, 48, 47, 47] },
 ] as const;
+
+const VARIANCE_BY_MONTH = [
+  { month: "Jan", varPct: 4.2 },
+  { month: "Feb", varPct: -12.5 },
+  { month: "Mar", varPct: 9.8 },
+  { month: "Apr", varPct: 3.1 },
+  { month: "May", varPct: 1.4 },
+  { month: "Jun", varPct: 5.6 },
+  { month: "Jul", varPct: 2.3 },
+  { month: "Aug", varPct: 6.9 },
+  { month: "Sep", varPct: 4.8 },
+  { month: "Oct", varPct: 7.2 },
+  { month: "Nov", varPct: 3.5 },
+  { month: "Dec", varPct: -2.1 },
+] as const;
+
+const GROSS_MARGIN_BY_MONTH = GROSS_MARGIN_BARS.map((gmPct, i) => ({
+  month: MONTHS[i],
+  gmPct,
+}));
 
 function toggleTheme() {
   const el = document.documentElement;
@@ -77,13 +106,11 @@ export default function App() {
         <GridItem className="tile tile--sparkline" column={1} row={6}>
           <h2 className="tile-title">Gross Margin %</h2>
           <div className="tile-subtitle">by Month</div>
-          <div className="sparkline-chart">
-            <div className="sparkline-chart__path" />
-            <div className="sparkline-axis">
-              {["Jan", "Mar", "May", "Jul", "Sep", "Nov"].map((month) => (
-                <span key={month}>{month}</span>
-              ))}
-            </div>
+          <div className="tile-chart">
+            <Chart data={GROSS_MARGIN_BY_MONTH} margin={{ top: 8, right: 8, bottom: 20, left: 8 }}>
+              <Line dataKey="gmPct" />
+              <XAxis hideAxisLine hideTicks />
+            </Chart>
           </div>
         </GridItem>
 
@@ -243,7 +270,7 @@ export default function App() {
             <h2 className="tile-title">{manager.name} Gross Margin Trend</h2>
             <div className="tile-subtitle">by Month, Executive</div>
             <div className="mini-chart">
-              <div className={`trend-line ${manager.trendClass}`} />
+              <Sparkline values={manager.trend} />
             </div>
           </GridItem>
         ))}
@@ -251,14 +278,14 @@ export default function App() {
         <GridItem className="tile tile--line" column={1} columnSpan={2} row={8}>
           <h2 className="tile-title">Revenue % Variance to Budget</h2>
           <div className="tile-subtitle">by Month</div>
-          <div className="line-chart">
-            <div className="line-chart__grid" aria-hidden="true" />
-            <div className="line-chart__path line-chart__path--variance" />
-            <div className="month-axis month-axis--compact">
-              {MONTHS.map((month) => (
-                <span key={month}>{month}</span>
-              ))}
-            </div>
+          <div className="tile-chart">
+            <Chart data={VARIANCE_BY_MONTH} margin={{ top: 12, right: 16, bottom: 24, left: 36 }}>
+              <Gridlines />
+              <ReferenceLine y={0} />
+              <Line dataKey="varPct" />
+              <XAxis />
+              <YAxis tickFormat={(v) => `${v as number}%`} numTicks={5} />
+            </Chart>
           </div>
         </GridItem>
       </Grid>
