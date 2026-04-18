@@ -33,7 +33,7 @@ export function Chart({
   width,
   height,
   children,
-  className,
+  className = "",
   style,
   ...props
 }: ChartProps) {
@@ -51,7 +51,6 @@ export function Chart({
     [margin],
   );
 
-  const rootClass = [styles.root, className].filter(Boolean).join(" ");
   // Explicit width/height props size the wrapping div so the whole component
   // matches the requested dimensions; otherwise the CSS rule keeps it 100% of
   // its parent. Each axis is independent — pass only width to fix the width
@@ -63,7 +62,7 @@ export function Chart({
   };
 
   return (
-    <div {...props} className={rootClass} style={rootStyle}>
+    <div {...props} className={`${styles.root} ${className}`} style={rootStyle}>
       <ParentSize>
         {({ width: w, height: h }) => {
           const finalW = width ?? w;

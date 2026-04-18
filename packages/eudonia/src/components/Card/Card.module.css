@@ -1,0 +1,78 @@
+.root {
+  --eudonia-card-bg: oklch(0.98 0 0);
+  --eudonia-card-border: none;
+  --eudonia-card-radius: 8px;
+  --eudonia-card-padding: 0.5rem;
+  --eudonia-card-gap: 0.25rem;
+  --eudonia-card-fg: #0a0907;
+  --eudonia-card-muted: #6b7280;
+  --eudonia-card-title-size: 0.8rem;
+  --eudonia-card-title-weight: 400;
+  --eudonia-card-title-tracking: normal;
+  --eudonia-card-subtitle-size: 0.7rem;
+  --eudonia-card-subtitle-weight: 400;
+  --eudonia-card-subtitle-tracking: normal;
+  --eudonia-card-shadow:
+    0 1px 2px oklch(0 0 0 / 0.03),
+    0 4px 8px oklch(0 0 0 / 0.03),
+    inset 0 0.5px 0 oklch(0.92 0.05 94.29 / 0.5),
+    inset 0.5px 0 0 oklch(0.92 0.05 94.29 / 0.5),
+    inset 0 -1px 0 oklch(0.21 0 0 / 0.05),
+    inset -1px 0 0 oklch(0.21 0 0 / 0.05);
+
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--eudonia-card-gap);
+  background: var(--eudonia-card-bg);
+  border: var(--eudonia-card-border);
+  border-radius: var(--eudonia-card-radius);
+  padding: var(--eudonia-card-padding);
+  color: var(--eudonia-card-fg);
+  box-shadow: var(--eudonia-card-shadow);
+}
+
+.title {
+  margin: 0;
+  color: var(--eudonia-card-muted);
+  font-size: var(--eudonia-card-title-size);
+  font-weight: var(--eudonia-card-title-weight);
+  letter-spacing: var(--eudonia-card-title-tracking);
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--eudonia-card-muted);
+  font-size: var(--eudonia-card-subtitle-size);
+  font-weight: var(--eudonia-card-subtitle-weight);
+  letter-spacing: var(--eudonia-card-subtitle-tracking);
+  line-height: 1.2;
+}
+
+@media (prefers-color-scheme: dark) {
+  .root {
+    --eudonia-card-bg: #18181b;
+    --eudonia-card-fg: #f4f4f5;
+    --eudonia-card-muted: #a1a1aa;
+    --eudonia-card-border: 1px solid #27272a;
+  }
+}
+
+[data-theme="dark"] .root {
+  --eudonia-card-bg: #18181b;
+  --eudonia-card-fg: #f4f4f5;
+  --eudonia-card-muted: #a1a1aa;
+  --eudonia-card-border: 1px solid #27272a;
+}
+
+[data-theme="light"] .root {
+  --eudonia-card-bg: #ffffff;
+  --eudonia-card-fg: #1f2937;
+  --eudonia-card-muted: #6b7280;
+  --eudonia-card-border: none;
+}

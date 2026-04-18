@@ -1,3 +1,5 @@
+export { Card } from "./components/Card/Card";
+export { ChartCard, type ChartCardProps } from "./components/ChartCard/ChartCard";
 export { StatCard } from "./components/StatCard/StatCard";
 export { Chart, type ChartProps } from "./components/Chart/Chart";
 export type { ChartDatum, ChartMargin } from "./components/Chart/context";

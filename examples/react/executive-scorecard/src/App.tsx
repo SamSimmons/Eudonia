@@ -1,6 +1,7 @@
 import { Grid, GridItem, Screen } from "eudonia/layout";
 import {
   Chart,
+  ChartCard,
   Gridlines,
   Line,
   ReferenceLine,
@@ -103,15 +104,13 @@ export default function App() {
           </GridItem>
         ))}
 
-        <GridItem className="tile tile--sparkline" column={1} row={6}>
-          <h2 className="tile-title">Gross Margin %</h2>
-          <div className="tile-subtitle">by Month</div>
-          <div className="tile-chart">
+        <GridItem column={1} row={6}>
+          <ChartCard title="Gross Margin %" subtitle="By Month">
             <Chart data={GROSS_MARGIN_BY_MONTH} margin={{ top: 8, right: 8, bottom: 20, left: 8 }}>
               <Line dataKey="gmPct" />
               <XAxis hideAxisLine hideTicks />
             </Chart>
-          </div>
+          </ChartCard>
         </GridItem>
 
         <GridItem className="tile tile--map" column={1} row={7}>

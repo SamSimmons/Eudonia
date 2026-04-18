@@ -1,83 +1,17 @@
-.root {
-  --eudonia-stat-bg: oklch(0.98 0 0);
-  --eudonia-stat-border: none;
-  --eudonia-stat-radius: 8px;
-  --eudonia-stat-padding: 0.75rem 1rem;
-  --eudonia-stat-gap: 0.5rem;
-  --eudonia-stat-fg: #0a0907;
-  --eudonia-stat-muted: #6b7280;
-  --eudonia-stat-title-size: 0.8rem;
-  --eudonia-stat-title-weight: 400;
-  --eudonia-stat-title-tracking: normal;
+.value {
   --eudonia-stat-value-size: clamp(2rem, 2.5vw, 3rem);
   --eudonia-stat-value-weight: 400;
   --eudonia-stat-value-tracking: -0.025em;
-  --eudonia-stat-shadow:
-    0 1px 2px oklch(0 0 0 / 0.03),
-    0 4px 8px oklch(0 0 0 / 0.03),
-    inset 0 0.5px 0 oklch(0.92 0.05 94.29 / 0.5),
-    inset 0.5px 0 0 oklch(0.92 0.05 94.29 / 0.5),
-    inset 0 -1px 0 oklch(0.21 0 0 / 0.05),
-    inset -1px 0 0 oklch(0.21 0 0 / 0.05);
 
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--eudonia-stat-gap);
-  background: var(--eudonia-stat-bg);
-  border: var(--eudonia-stat-border);
-  border-radius: var(--eudonia-stat-radius);
-  padding: var(--eudonia-stat-padding);
-  color: var(--eudonia-stat-fg);
-  box-shadow: var(--eudonia-stat-shadow);
-}
-
-.title {
-  margin: 0;
-  color: var(--eudonia-stat-muted);
-  font-size: var(--eudonia-stat-title-size);
-  font-weight: var(--eudonia-stat-title-weight);
-  letter-spacing: var(--eudonia-stat-title-tracking);
-  line-height: 1.2;
-}
-
-.value {
   flex: 1;
   display: grid;
   place-items: center;
-  padding-bottom: calc(var(--eudonia-stat-title-size) * 1.2 + var(--eudonia-stat-gap));
+  padding-bottom: calc(var(--eudonia-card-title-size) * 1.2 + var(--eudonia-card-gap));
   box-sizing: border-box;
   font-size: var(--eudonia-stat-value-size);
   font-weight: var(--eudonia-stat-value-weight);
   letter-spacing: var(--eudonia-stat-value-tracking);
   line-height: 1;
-  color: var(--eudonia-stat-fg);
+  color: var(--eudonia-card-fg);
   font-variant-numeric: tabular-nums;
-}
-
-@media (prefers-color-scheme: dark) {
-  .root {
-    --eudonia-stat-bg: #18181b;
-    --eudonia-stat-border-color: #27272a;
-    --eudonia-stat-fg: #f4f4f5;
-    --eudonia-stat-muted: #a1a1aa;
-  }
-}
-
-[data-theme="dark"] .root {
-  --eudonia-stat-bg: #18181b;
-  --eudonia-stat-border-color: #27272a;
-  --eudonia-stat-fg: #f4f4f5;
-  --eudonia-stat-muted: #a1a1aa;
-}
-
-[data-theme="light"] .root {
-  --eudonia-stat-bg: #ffffff;
-  --eudonia-stat-border-color: #e5e7eb;
-  --eudonia-stat-fg: #1f2937;
-  --eudonia-stat-muted: #6b7280;
 }
