@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 
 import type { XScale, YScale } from "./scales";
 
@@ -23,7 +23,7 @@ export interface ChartContextValue {
 export const ChartContext = createContext<ChartContextValue | null>(null);
 
 export function useChart(): ChartContextValue {
-  const ctx = useContext(ChartContext);
+  const ctx = use(ChartContext);
   if (!ctx) throw new Error("useChart must be used inside <Chart>");
   return ctx;
 }

@@ -41,10 +41,10 @@ export function ChartSvg({
   }, [data, width, height, xKey, yKeys, xType, yDomain, margin]);
 
   return (
-    <ChartContext.Provider value={contextValue}>
+    <ChartContext value={contextValue}>
       <svg className={styles.svg} width={width} height={height}>
         <g transform={`translate(${margin.left},${margin.top})`}>{children}</g>
       </svg>
-    </ChartContext.Provider>
+    </ChartContext>
   );
 }

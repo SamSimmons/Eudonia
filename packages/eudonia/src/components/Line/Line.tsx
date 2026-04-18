@@ -37,7 +37,7 @@ export function Line({
       // visx LinePath types `data` as a mutable array; we treat it as readonly.
       // Spreading would copy the whole dataset on every render, which is wasteful
       // for large series. The component does not mutate the input.
-      // oxlint-disable-next-line typescript/consistent-type-assertions
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       data={data as ChartDatum[]}
       x={x}
       y={y}
