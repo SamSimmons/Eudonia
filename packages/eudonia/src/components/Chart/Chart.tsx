@@ -1,11 +1,22 @@
-import { type ComponentPropsWithoutRef, type ReactNode, useMemo } from "react";
-import { ParentSize } from "@visx/responsive";
+import {
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 
 import styles from "./Chart.module.css";
-import { ChartSvg } from "./ChartSvg";
-import type { ChartDatum, ChartMargin } from "./context";
-import { inferXKey, inferXType, inferYKeys } from "./infer";
+import { ChartSurface } from "./ChartSurface";
 import type { ChartXType } from "./scales";
+import {
+  ChartStoreContext,
+  createChartStore,
+  type ChartDatum,
+  type ChartMargin,
+} from "./store";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 
@@ -37,24 +48,62 @@ export function Chart({
   style,
   ...props
 }: ChartProps) {
-  const resolvedXKey = useMemo(() => xKey ?? inferXKey(data), [xKey, data]);
-  const resolvedYKeys = useMemo(
-    () => yKeys ?? inferYKeys(data, resolvedXKey),
-    [yKeys, data, resolvedXKey],
-  );
-  const resolvedXType = useMemo(
-    () => xType ?? inferXType(data, resolvedXKey),
-    [xType, data, resolvedXKey],
-  );
   const resolvedMargin = useMemo<ChartMargin>(
     () => ({ ...DEFAULT_MARGIN, ...margin }),
     [margin],
   );
 
-  // Explicit width/height props size the wrapping div so the whole component
-  // matches the requested dimensions; otherwise the CSS rule keeps it 100% of
-  // its parent. Each axis is independent — pass only width to fix the width
-  // and let height stay responsive (or vice versa).
+  // Lazy-init the store once per Chart instance. Subsequent prop changes are
+  // synced in via the layout effects below.
+  const [store] = useState(() =>
+    createChartStore({
+      data,
+      xKey,
+      xType,
+      yKeys,
+      yDomain,
+      margin: resolvedMargin,
+      width: width ?? 0,
+      height: height ?? 0,
+    }),
+  );
+
+  useIsomorphicLayoutEffect(() => {
+    store.getState().setData(data);
+  }, [store, data]);
+
+  useIsomorphicLayoutEffect(() => {
+    store.getState().setMargin(resolvedMargin);
+  }, [store, resolvedMargin]);
+
+  useIsomorphicLayoutEffect(() => {
+    store.getState().setAuthoredConfig({ xKey, xType, yKeys, yDomain });
+  }, [store, xKey, xType, yKeys, yDomain]);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Measure the container and write size into the store. Explicit width/height
+  // props short-circuit measurement entirely. Layout effect + getBoundingClientRect
+  // runs before paint, so the first mount already has a real size for scales.
+  useIsomorphicLayoutEffect(() => {
+    if (width !== undefined && height !== undefined) {
+      store.getState().setSize(width, height);
+      return;
+    }
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      store.getState().setSize(width ?? rect.width, height ?? rect.height);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+    };
+  }, [store, width, height]);
+
   const rootStyle = {
     ...style,
     ...(width !== undefined && { width }),
@@ -62,27 +111,10 @@ export function Chart({
   };
 
   return (
-    <div {...props} className={`${styles.root} ${className}`} style={rootStyle}>
-      <ParentSize>
-        {({ width: w, height: h }) => {
-          const finalW = width ?? w;
-          const finalH = height ?? h;
-          return finalW > 0 && finalH > 0 ? (
-            <ChartSvg
-              data={data}
-              width={finalW}
-              height={finalH}
-              xKey={resolvedXKey}
-              yKeys={resolvedYKeys}
-              xType={resolvedXType}
-              yDomain={yDomain}
-              margin={resolvedMargin}
-            >
-              {children}
-            </ChartSvg>
-          ) : null;
-        }}
-      </ParentSize>
+    <div {...props} ref={containerRef} className={`${styles.root} ${className}`} style={rootStyle}>
+      <ChartStoreContext value={store}>
+        <ChartSurface>{children}</ChartSurface>
+      </ChartStoreContext>
     </div>
   );
 }

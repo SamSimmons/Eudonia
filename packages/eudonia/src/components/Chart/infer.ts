@@ -1,4 +1,4 @@
-import type { ChartDatum } from "./context";
+import type { CategoricalScalePreference, ChartDatum } from "./store";
 import type { ChartXType } from "./scales";
 
 export function inferXKey(data: readonly ChartDatum[]): string {
@@ -20,13 +20,17 @@ export function inferYKeys(
     .map(([k]) => k);
 }
 
+// Categorical (string) x resolves to band or point based on what marks want.
+// Default is `point` so the first and last category sit at the chart edges —
+// bars/heatmap-rects opt in to `band` via registration since they need a width.
 export function inferXType(
   data: readonly ChartDatum[],
   xKey: string,
+  categoricalPreference: CategoricalScalePreference,
 ): ChartXType {
   if (data.length === 0) return "linear";
   const first = data[0]![xKey];
   if (first instanceof Date) return "time";
-  if (typeof first === "string") return "band";
+  if (typeof first === "string") return categoricalPreference;
   return "linear";
 }

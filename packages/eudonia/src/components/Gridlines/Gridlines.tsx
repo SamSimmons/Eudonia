@@ -1,11 +1,16 @@
 import { GridColumns, GridRows } from "@visx/grid";
 
-import { useChart } from "../Chart/context";
+import {
+  useInnerSize,
+  useXScale,
+  useXTicks,
+  useYScale,
+  useYTicks,
+} from "../Chart/hooks";
 
 export interface GridlinesProps {
   rows?: boolean;
   columns?: boolean;
-  numTicks?: number;
   stroke?: string;
   strokeDasharray?: string;
   className?: string;
@@ -14,12 +19,15 @@ export interface GridlinesProps {
 export function Gridlines({
   rows = true,
   columns = false,
-  numTicks,
   stroke = "var(--eudonia-chart-grid)",
   strokeDasharray,
   className,
 }: GridlinesProps) {
-  const { xScale, yScale, innerWidth, innerHeight } = useChart();
+  const xScale = useXScale();
+  const yScale = useYScale();
+  const { innerWidth, innerHeight } = useInnerSize();
+  const xTicks = useXTicks();
+  const yTicks = useYTicks();
 
   return (
     <g className={className}>
@@ -29,7 +37,7 @@ export function Gridlines({
           width={innerWidth}
           stroke={stroke}
           strokeDasharray={strokeDasharray}
-          numTicks={numTicks}
+          tickValues={yTicks.map((t) => t.value)}
         />
       ) : null}
       {columns ? (
@@ -38,7 +46,7 @@ export function Gridlines({
           height={innerHeight}
           stroke={stroke}
           strokeDasharray={strokeDasharray}
-          numTicks={numTicks}
+          tickValues={xTicks.map((t) => t.value)}
         />
       ) : null}
     </g>

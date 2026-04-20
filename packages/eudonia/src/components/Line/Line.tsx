@@ -1,8 +1,15 @@
 import type { ComponentPropsWithoutRef } from "react";
 import { LinePath } from "@visx/shape";
 
-import { type ChartDatum, useChart } from "../Chart/context";
+import {
+  useChartData,
+  useRegisterMark,
+  useResolvedXKey,
+  useXScale,
+  useYScale,
+} from "../Chart/hooks";
 import { getX } from "../Chart/scales";
+import type { ChartDatum } from "../Chart/store";
 
 type PathProps = Omit<
   ComponentPropsWithoutRef<"path">,
@@ -22,7 +29,11 @@ export function Line({
   className,
   ...props
 }: LineProps) {
-  const { data, xKey, xScale, yScale } = useChart();
+  useRegisterMark({ dataKey, xCategoricalPreference: "point" });
+  const data = useChartData();
+  const xKey = useResolvedXKey();
+  const xScale = useXScale();
+  const yScale = useYScale();
 
   const x = (d: ChartDatum) => getX(d[xKey], xScale);
   const y = (d: ChartDatum) => {

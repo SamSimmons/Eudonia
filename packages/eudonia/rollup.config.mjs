@@ -1,7 +1,10 @@
+import alias from "@rollup/plugin-alias";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import esbuild from "rollup-plugin-esbuild";
 import postcss from "rollup-plugin-postcss";
 import pkg from "./package.json" with { type: "json" };
+
+const srcDir = `${import.meta.dirname}/src`;
 
 const externalIds = [
   ...Object.keys(pkg.dependencies ?? {}),
@@ -13,18 +16,19 @@ const external = (id) =>
 
 export default {
   input: {
-    layout: "src/layout.ts",
-    components: "src/components.ts",
+    layout: `${srcDir}/layout.ts`,
+    components: `${srcDir}/components.ts`,
   },
   output: {
-    dir: "dist",
+    dir: `${import.meta.dirname}/dist`,
     format: "esm",
     preserveModules: true,
-    preserveModulesRoot: "src",
+    preserveModulesRoot: srcDir,
     entryFileNames: "[name].js",
   },
   external,
   plugins: [
+    alias({ entries: [{ find: /^@\/(.*)$/, replacement: `${srcDir}/$1` }] }),
     nodeResolve({ extensions: [".ts", ".tsx", ".js", ".jsx"] }),
     postcss({
       modules: {
@@ -36,7 +40,7 @@ export default {
     esbuild({
       target: "es2022",
       jsx: "automatic",
-      tsconfig: "./tsconfig.json",
+      tsconfig: `${import.meta.dirname}/tsconfig.json`,
     }),
   ],
 };

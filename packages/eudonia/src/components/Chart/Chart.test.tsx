@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cleanup, renderHook } from "@testing-library/react";
 
 import { Chart, type ChartProps } from "./Chart";
-import { useChart } from "./context";
+import { useResolvedXKey, useXScale, useYScale } from "./hooks";
 
 afterEach(() => {
   cleanup();
@@ -17,7 +17,15 @@ function renderChart(props: Omit<ChartProps, "children" | "width" | "height">) {
       {children}
     </Chart>
   );
-  return renderHook(() => useChart(), { wrapper }).result.current;
+  const { result } = renderHook(
+    () => ({
+      xKey: useResolvedXKey(),
+      xScale: useXScale(),
+      yScale: useYScale(),
+    }),
+    { wrapper },
+  );
+  return result.current;
 }
 
 function dateDomain(domain: readonly unknown[]): [Date, Date] {
@@ -107,14 +115,14 @@ describe("Chart", () => {
     expect(hi.valueOf()).toBe(start + (n - 1) * 86_400_000);
   });
 
-  test("infers band scale for string x values", () => {
+  test("infers point scale for string x values when no mark requests band", () => {
     const ctx = renderChart({
       data: [
         { label: "a", y: 1 },
         { label: "b", y: 2 },
       ],
     });
-    expect(ctx.xScale.kind).toBe("band");
+    expect(ctx.xScale.kind).toBe("point");
     expect(ctx.xKey).toBe("label");
   });
 

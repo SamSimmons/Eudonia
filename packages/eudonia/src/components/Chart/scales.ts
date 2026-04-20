@@ -1,23 +1,29 @@
-import { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
+import { scaleBand, scaleLinear, scalePoint, scaleTime } from "@visx/scale";
 import { extent } from "d3-array";
 
-import type { ChartDatum } from "./context";
+import type { ChartDatum } from "./store";
 
 export type BandScale = ReturnType<typeof scaleBand<string>>;
+export type PointScale = ReturnType<typeof scalePoint<string>>;
 export type TimeScale = ReturnType<typeof scaleTime<number>>;
 export type LinearScale = ReturnType<typeof scaleLinear<number>>;
 
-// d3-scale's three scale types share no discriminating tag, so TS can't narrow
-// a `ScaleBand | ScaleTime | ScaleLinear` union. Wrapping each in a tagged
-// object lets consumers `switch (xScale.kind)` and stay cast-free.
+// d3-scale's scale types share no discriminating tag, so TS can't narrow a raw
+// union. Wrapping each in a tagged object lets consumers `switch (xScale.kind)`
+// and stay cast-free.
 export type XScale =
   | { kind: "band"; scale: BandScale }
+  | { kind: "point"; scale: PointScale }
   | { kind: "time"; scale: TimeScale }
   | { kind: "linear"; scale: LinearScale };
 
 export type YScale = LinearScale;
 
 export type ChartXType = XScale["kind"];
+
+// Union of every value type an XScale's domain can contain. Each kind emits a
+// single concrete type, so downstream code narrows via the scale's `kind` tag.
+export type XTickValue = string | number | Date;
 
 // Returns NaN for invalid or out-of-domain input. Callers should pair this with
 // a `defined` predicate (e.g. visx LinePath's `defined`) so invalid points are
@@ -29,6 +35,8 @@ export function getX(value: unknown, xScale: XScale): number {
       const pos = xScale.scale(value);
       return pos === undefined ? NaN : pos + xScale.scale.bandwidth() / 2;
     }
+    case "point":
+      return typeof value === "string" ? (xScale.scale(value) ?? NaN) : NaN;
     case "time":
       return value instanceof Date ? (xScale.scale(value) ?? NaN) : NaN;
     case "linear":
@@ -50,6 +58,16 @@ export function buildXScale(
         range: [0, width],
         paddingInner: 0.1,
         paddingOuter: 0.05,
+      }),
+    };
+  }
+  if (type === "point") {
+    return {
+      kind: "point",
+      scale: scalePoint<string>({
+        domain: data.map((d) => String(d[xKey])),
+        range: [0, width],
+        padding: 0,
       }),
     };
   }

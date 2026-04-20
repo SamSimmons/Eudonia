@@ -1,17 +1,36 @@
 import { AxisLeft } from "@visx/axis";
 
 import styles from "../Chart/Chart.module.css";
-import { useChart } from "../Chart/context";
+import type { TickDensity } from "../Chart/computeTicks";
+import { useRegisterYAxis, useYScale, useYTicks } from "../Chart/hooks";
 
 export interface YAxisProps {
-  tickFormat?: (value: unknown, index: number) => string;
-  numTicks?: number;
+  density?: TickDensity;
+  preferredTickCount?: number;
+  tickFormat?: (value: number) => string;
   hideAxisLine?: boolean;
   hideTicks?: boolean;
+  display?: boolean;
 }
 
-export function YAxis({ tickFormat, numTicks, hideAxisLine, hideTicks }: YAxisProps) {
-  const { yScale } = useChart();
+export function YAxis({
+  density = "medium",
+  preferredTickCount,
+  tickFormat,
+  hideAxisLine,
+  hideTicks,
+  display = true,
+}: YAxisProps) {
+  useRegisterYAxis({
+    density,
+    preferredTickCount,
+    tickFormat,
+  });
+
+  const yScale = useYScale();
+  const yTicks = useYTicks();
+
+  if (!display) return null;
 
   return (
     <AxisLeft
@@ -20,8 +39,8 @@ export function YAxis({ tickFormat, numTicks, hideAxisLine, hideTicks }: YAxisPr
       tickStroke="var(--eudonia-chart-axis, oklch(0.5 0 0))"
       hideAxisLine={hideAxisLine}
       hideTicks={hideTicks}
-      numTicks={numTicks}
-      tickFormat={tickFormat}
+      tickValues={yTicks.map((t) => t.value)}
+      tickFormat={(_value, index) => yTicks[index]?.label ?? ""}
       tickLabelProps={() => ({
         className: styles.tickLabel,
         textAnchor: "end",

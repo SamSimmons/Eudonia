@@ -1,5 +1,5 @@
 import styles from "../Chart/Chart.module.css";
-import { useChart } from "../Chart/context";
+import { useInnerSize, useXScale, useYScale } from "../Chart/hooks";
 import { getX } from "../Chart/scales";
 
 interface CommonReferenceLineProps {
@@ -27,7 +27,9 @@ export function ReferenceLine({
   label,
   className,
 }: ReferenceLineProps) {
-  const { xScale, yScale, innerWidth, innerHeight } = useChart();
+  const xScale = useXScale();
+  const yScale = useYScale();
+  const { innerWidth, innerHeight } = useInnerSize();
 
   if ((x === undefined) === (y === undefined)) {
     throw new Error(

@@ -18,6 +18,17 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...noUnnecessaryEffect.configs.recommended.rules,
       '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../../*'],
+              message: 'Use the "@/" alias for imports that reach outside the current directory tree.',
+            },
+          ],
+        },
+      ],
     },
   },
 );

@@ -1,14 +1,10 @@
 import { Grid, GridItem, Screen } from "eudonia/layout";
 import {
-  Chart,
   ChartCard,
-  Gridlines,
-  Line,
+  LineChart,
   ReferenceLine,
   Sparkline,
   StatCard,
-  XAxis,
-  YAxis,
 } from "eudonia/components";
 
 const BOARD_COLUMNS = ["1fr", "2fr", "1fr", "1fr"] as const;
@@ -106,10 +102,12 @@ export default function App() {
 
         <GridItem column={1} row={6}>
           <ChartCard title="Gross Margin %" subtitle="By Month">
-            <Chart data={GROSS_MARGIN_BY_MONTH} margin={{ top: 8, right: 8, bottom: 20, left: 8 }}>
-              <Line dataKey="gmPct" />
-              <XAxis hideAxisLine hideTicks />
-            </Chart>
+            <LineChart
+              data={GROSS_MARGIN_BY_MONTH}
+              dataKey="gmPct"
+              margin={{ top: 8, right: 8, bottom: 20, left: 35 }}
+              yAxis={{ density: "low", tickFormat: (v) => `${v}%` }}
+            />
           </ChartCard>
         </GridItem>
 
@@ -274,18 +272,17 @@ export default function App() {
           </GridItem>
         ))}
 
-        <GridItem className="tile tile--line" column={1} columnSpan={2} row={8}>
-          <h2 className="tile-title">Revenue % Variance to Budget</h2>
-          <div className="tile-subtitle">by Month</div>
-          <div className="tile-chart">
-            <Chart data={VARIANCE_BY_MONTH} margin={{ top: 12, right: 16, bottom: 24, left: 36 }}>
-              <Gridlines />
+        <GridItem column={1} columnSpan={2} row={8}>
+          <ChartCard title="Revenue % Variance to Budget" subtitle="By Month">
+            <LineChart
+              data={VARIANCE_BY_MONTH}
+              dataKey="varPct"
+              margin={{ top: 12, right: 16, bottom: 24, left: 30 }}
+              yAxis={{ tickFormat: (v) => `${v}%` }}
+            >
               <ReferenceLine y={0} />
-              <Line dataKey="varPct" />
-              <XAxis />
-              <YAxis tickFormat={(v) => `${v as number}%`} numTicks={5} />
-            </Chart>
-          </div>
+            </LineChart>
+          </ChartCard>
         </GridItem>
       </Grid>
       <button className="theme-toggle" onClick={toggleTheme} type="button">
