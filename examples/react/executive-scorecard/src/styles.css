@@ -139,10 +139,6 @@ table {
   text-transform: uppercase;
 }
 
-.tile--map {
-  padding-bottom: 8px;
-}
-
 .tile--sparkline {
   padding-bottom: 8px;
 }
@@ -151,59 +147,6 @@ table {
   flex: 1 1 auto;
   min-height: 0;
   margin-top: 6px;
-}
-
-.map-placeholder {
-  flex: 1 1 auto;
-  min-height: 0;
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: 1.25fr 1fr 0.28fr;
-  grid-template-rows: 0.94fr 1.05fr;
-  gap: 4px;
-}
-
-.map-block {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  padding: 6px;
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.map-block--north {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  background: #16c3bf;
-}
-
-.map-block--east {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  background: #38464d;
-}
-
-.map-block--west {
-  grid-column: 3;
-  grid-row: 1;
-  background: #f08c73;
-}
-
-.map-block--south {
-  grid-column: 2;
-  grid-row: 2;
-  justify-content: flex-end;
-  background: #ffde63;
-  color: rgba(66, 54, 20, 0.8);
-}
-
-.map-block--tiny {
-  grid-column: 3;
-  grid-row: 2;
-  background: #f3a44d;
 }
 
 .bar-chart {

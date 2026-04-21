@@ -1,8 +1,10 @@
-// Canvas text measurement. Canvas measureText agrees with SVG single-line text
-// rendering once the font spec matches, so we use it to compute label widths
-// without mounting anything. No DOM required past canvas creation.
+// Canvas-backed text measurement, and the truncation helper that builds on it.
+// Canvas measureText agrees with SVG single-line text rendering once the font
+// spec matches, so we use it to compute label widths without mounting anything.
+// No DOM required past canvas creation.
 
 const CACHE_LIMIT = 500;
+const ELLIPSIS = "…";
 
 const cache = new Map<string, number>();
 let canvasCtx: CanvasRenderingContext2D | null = null;
@@ -43,4 +45,27 @@ export function measureText(text: string, font: string): number {
   }
   cache.set(key, width);
   return width;
+}
+
+// Returns the longest prefix of `text` that fits within `maxWidth` when
+// rendered in `font`, with an ellipsis appended. Returns `text` unchanged
+// when it already fits, or `""` when not even the ellipsis fits.
+//
+// Uses binary search over prefix lengths — O(log n) canvas measurements.
+export function truncateText(text: string, font: string, maxWidth: number): string {
+  if (maxWidth <= 0) return "";
+  if (measureText(text, font) <= maxWidth) return text;
+
+  const ellipsisWidth = measureText(ELLIPSIS, font);
+  if (ellipsisWidth > maxWidth) return "";
+
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    const candidate = text.slice(0, mid) + ELLIPSIS;
+    if (measureText(candidate, font) <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo === 0 ? "" : text.slice(0, lo) + ELLIPSIS;
 }

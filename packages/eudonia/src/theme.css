@@ -8,6 +8,20 @@
   --eudonia-chart-grid: oklch(0.9 0 0);
   --eudonia-chart-label: oklch(0.42 0 0);
   --eudonia-chart-label-size: 0.7rem;
+
+  --eudonia-chart-treemap: oklch(0.62 0.14 235);
+  --eudonia-chart-treemap-stroke: oklch(1 0 0);
+  --eudonia-chart-treemap-label: oklch(0.98 0 0);
+  --eudonia-chart-treemap-value: oklch(0.98 0 0 / 0.85);
+
+  --eudonia-chart-cat-1: oklch(0.62 0.14 235);
+  --eudonia-chart-cat-2: oklch(0.65 0.15 155);
+  --eudonia-chart-cat-3: oklch(0.68 0.15 75);
+  --eudonia-chart-cat-4: oklch(0.6 0.17 25);
+  --eudonia-chart-cat-5: oklch(0.55 0.17 300);
+  --eudonia-chart-cat-6: oklch(0.6 0.13 200);
+  --eudonia-chart-cat-7: oklch(0.7 0.12 100);
+  --eudonia-chart-cat-8: oklch(0.55 0.15 340);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -15,6 +29,7 @@
     --eudonia-chart-axis: oklch(0.65 0 0);
     --eudonia-chart-grid: oklch(0.3 0 0);
     --eudonia-chart-label: oklch(0.7 0 0);
+    --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
   }
 }
 
@@ -22,4 +37,5 @@
   --eudonia-chart-axis: oklch(0.65 0 0);
   --eudonia-chart-grid: oklch(0.3 0 0);
   --eudonia-chart-label: oklch(0.7 0 0);
+  --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
 }

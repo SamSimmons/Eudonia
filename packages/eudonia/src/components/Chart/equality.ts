@@ -1,9 +1,11 @@
+import type { TreemapConfig } from "../Treemap/types";
+
 import type {
   ChartMargin,
   MarkRegistration,
   XAxisConfig,
   YAxisConfig,
-} from "./store";
+} from "./state-types";
 
 export function shallowEqualMargin(a: ChartMargin, b: ChartMargin): boolean {
   return a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left;
@@ -61,5 +63,15 @@ export function shallowEqualYAxisConfig(a: YAxisConfig, b: YAxisConfig): boolean
     a.density === b.density &&
     a.preferredTickCount === b.preferredTickCount &&
     a.tickFormat === b.tickFormat
+  );
+}
+
+export function shallowEqualTreemapConfig(a: TreemapConfig, b: TreemapConfig): boolean {
+  return (
+    a.tile === b.tile &&
+    a.renderBranches === b.renderBranches &&
+    a.padding.inner === b.padding.inner &&
+    a.padding.outer === b.padding.outer &&
+    a.padding.top === b.padding.top
   );
 }

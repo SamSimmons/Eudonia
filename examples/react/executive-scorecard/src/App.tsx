@@ -5,6 +5,8 @@ import {
   ReferenceLine,
   Sparkline,
   StatCard,
+  TreemapChart,
+  type TreemapNode,
 } from "eudonia/components";
 
 const BOARD_COLUMNS = ["1fr", "2fr", "1fr", "1fr"] as const;
@@ -71,6 +73,17 @@ const GROSS_MARGIN_BY_MONTH = GROSS_MARGIN_BARS.map((gmPct, i) => ({
   gmPct,
 }));
 
+const REVENUE_BY_REGION: TreemapNode = {
+  name: "Regions",
+  children: [
+    { name: "North", value: 92 },
+    { name: "East", value: 64 },
+    { name: "South", value: 38 },
+    { name: "West", value: 22 },
+    { name: "Central", value: 9 },
+  ],
+};
+
 function toggleTheme() {
   const el = document.documentElement;
   const current = el.dataset.theme;
@@ -111,16 +124,10 @@ export default function App() {
           </ChartCard>
         </GridItem>
 
-        <GridItem className="tile tile--map" column={1} row={7}>
-          <h2 className="tile-title">Total Revenue</h2>
-          <div className="tile-subtitle">by Region</div>
-          <div className="map-placeholder">
-            <div className="map-block map-block--north">North</div>
-            <div className="map-block map-block--east">East</div>
-            <div className="map-block map-block--west">West</div>
-            <div className="map-block map-block--south">South</div>
-            <div className="map-block map-block--tiny" />
-          </div>
+        <GridItem column={1} row={7}>
+          <ChartCard title="Total Revenue" subtitle="by Region">
+            <TreemapChart data={REVENUE_BY_REGION} aria-label="Total Revenue by Region" />
+          </ChartCard>
         </GridItem>
 
         <GridItem className="tile tile--chart" column={2} row={2} rowSpan={2}>

@@ -1,81 +1,31 @@
 import { createContext } from "react";
 import { createStore as createZustandStore, type StoreApi } from "zustand/vanilla";
 
-import type { Tick, TickDensity, TickPreserve } from "./computeTicks";
+import type { TreemapConfig } from "../Treemap/types";
+
+import type { ChartData } from "./dataShape";
 import { derive } from "./derive";
 import {
   sameStringList,
   shallowEqualMargin,
   shallowEqualMark,
+  shallowEqualTreemapConfig,
   shallowEqualXAxisConfig,
   shallowEqualYAxisConfig,
   shallowEqualYDomain,
 } from "./equality";
-import type { ChartXType, XScale, XTickValue, YScale } from "./scales";
-
-export type ChartDatum = Record<string, unknown>;
-
-export interface ChartMargin {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-// Preference a mark contributes for the categorical x-scale. `band` wins over
-// `point` when marks disagree — a line sampled on band centers still renders,
-// but a bar can't render without a bandwidth.
-export type CategoricalScalePreference = "band" | "point";
-
-export interface MarkRegistration {
-  dataKey?: string | readonly string[];
-  xCategoricalPreference?: CategoricalScalePreference;
-}
-
-export interface XAxisConfig {
-  density: TickDensity;
-  preserve: TickPreserve;
-  anchorLabelsToEdges: boolean;
-  preferredTickCount: number | undefined;
-  tickFormat: ((v: XTickValue) => string) | undefined;
-}
-
-export interface YAxisConfig {
-  density: TickDensity;
-  preferredTickCount: number | undefined;
-  tickFormat: ((v: number) => string) | undefined;
-}
-
-export interface ChartStateInputs {
-  data: readonly ChartDatum[];
-  authoredXKey: string | undefined;
-  authoredXType: ChartXType | undefined;
-  authoredYKeys: readonly string[] | undefined;
-  yDomain: readonly [number, number] | undefined;
-  margin: ChartMargin;
-  width: number;
-  height: number;
-  markRegistrations: ReadonlyMap<string, MarkRegistration>;
-  xAxisRegistrations: ReadonlyMap<string, XAxisConfig>;
-  yAxisRegistrations: ReadonlyMap<string, YAxisConfig>;
-}
-
-export interface ChartStateDerived {
-  resolvedXKey: string;
-  resolvedXType: ChartXType;
-  resolvedYKeys: readonly string[];
-  innerWidth: number;
-  innerHeight: number;
-  xScale: XScale;
-  yScale: YScale;
-  xAxisConfig: XAxisConfig;
-  yAxisConfig: YAxisConfig;
-  xTicks: Tick<XTickValue>[];
-  yTicks: Tick<number>[];
-}
+import type { ChartXType } from "./scales";
+import type {
+  ChartMargin,
+  ChartStateDerived,
+  ChartStateInputs,
+  MarkRegistration,
+  XAxisConfig,
+  YAxisConfig,
+} from "./state-types";
 
 interface ChartStateActions {
-  setData: (data: readonly ChartDatum[]) => void;
+  setData: (data: ChartData) => void;
   setMargin: (margin: ChartMargin) => void;
   setSize: (width: number, height: number) => void;
   setAuthoredConfig: (cfg: {
@@ -90,13 +40,15 @@ interface ChartStateActions {
   unregisterXAxis: (id: string) => void;
   registerYAxis: (id: string, cfg: YAxisConfig) => void;
   unregisterYAxis: (id: string) => void;
+  registerTreemap: (id: string, cfg: TreemapConfig) => void;
+  unregisterTreemap: (id: string) => void;
 }
 
 export type ChartState = ChartStateInputs & ChartStateDerived & ChartStateActions;
 export type ChartStore = StoreApi<ChartState>;
 
 export interface CreateChartStoreInit {
-  data: readonly ChartDatum[];
+  data: ChartData;
   xKey?: string;
   xType?: ChartXType;
   yKeys?: readonly string[];
@@ -120,6 +72,7 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
       markRegistrations: new Map(),
       xAxisRegistrations: new Map(),
       yAxisRegistrations: new Map(),
+      treemapRegistrations: new Map(),
     };
     const derived = derive(null, inputs);
 
@@ -220,6 +173,23 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           const yAxisRegistrations = new Map(prev.yAxisRegistrations);
           yAxisRegistrations.delete(id);
           const next = { ...prev, yAxisRegistrations };
+          return { ...next, ...derive(prev, next) };
+        }),
+      registerTreemap: (id, cfg) =>
+        set((prev) => {
+          const existing = prev.treemapRegistrations.get(id);
+          if (existing && shallowEqualTreemapConfig(existing, cfg)) return prev;
+          const treemapRegistrations = new Map(prev.treemapRegistrations);
+          treemapRegistrations.set(id, cfg);
+          const next = { ...prev, treemapRegistrations };
+          return { ...next, ...derive(prev, next) };
+        }),
+      unregisterTreemap: (id) =>
+        set((prev) => {
+          if (!prev.treemapRegistrations.has(id)) return prev;
+          const treemapRegistrations = new Map(prev.treemapRegistrations);
+          treemapRegistrations.delete(id);
+          const next = { ...prev, treemapRegistrations };
           return { ...next, ...derive(prev, next) };
         }),
     };

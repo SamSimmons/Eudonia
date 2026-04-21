@@ -1,27 +1,37 @@
 import { use, useId, useState } from "react";
+import type { HierarchyRectangularNode } from "d3-hierarchy";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 
+import type {
+  TreemapConfig,
+  TreemapNode,
+  TreemapNodeBase,
+} from "../Treemap/types";
+
 import type { Tick } from "./computeTicks";
+import { isHierarchical, type ChartDatum } from "./dataShape";
 import {
   shallowEqualMark,
+  shallowEqualTreemapConfig,
   shallowEqualXAxisConfig,
   shallowEqualYAxisConfig,
 } from "./equality";
+import type { XScale, XTickValue, YScale } from "./scales";
+import type {
+  ChartMargin,
+  MarkRegistration,
+  XAxisConfig,
+  YAxisConfig,
+} from "./state-types";
 import {
   ChartStoreContext,
-  type ChartMargin,
   type ChartState,
   type ChartStore,
-  type ChartDatum,
-  type MarkRegistration,
-  type XAxisConfig,
-  type YAxisConfig,
 } from "./store";
-import type { XScale, XTickValue, YScale } from "./scales";
 
 export function useChartStore(): ChartStore {
   const store = use(ChartStoreContext);
@@ -38,9 +48,32 @@ export function useChart<T>(
   return useStoreWithEqualityFn(useChartStore(), selector, equalityFn);
 }
 
-const selectData = (s: ChartState) => s.data;
-export function useChartData(): readonly ChartDatum[] {
-  return useStore(useChartStore(), selectData);
+const selectArrayData = (s: ChartState): readonly ChartDatum[] => {
+  if (isHierarchical(s.data)) {
+    throw new Error(
+      "useChartArrayData(): <Chart> was given hierarchical data. Use useChartHierarchyData() instead.",
+    );
+  }
+  return s.data;
+};
+export function useChartArrayData(): readonly ChartDatum[] {
+  return useStore(useChartStore(), selectArrayData);
+}
+
+const selectHierarchyData = (s: ChartState): TreemapNode => {
+  if (!isHierarchical(s.data)) {
+    throw new Error(
+      "useChartHierarchyData(): <Chart> was given flat data. Use useChartArrayData() instead.",
+    );
+  }
+  return s.data;
+};
+export function useChartHierarchyData<
+  T extends TreemapNodeBase = TreemapNodeBase,
+>(): TreemapNode<T> {
+  // Store is non-generic over node shape; consumers carry their own T.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return useStore(useChartStore(), selectHierarchyData) as TreemapNode<T>;
 }
 
 const selectInnerSize = (s: ChartState) => ({
@@ -126,6 +159,30 @@ export function useRegisterYAxis(cfg: YAxisConfig): void {
       store.getState().unregisterYAxis(id);
     };
   }, [store, id, stable]);
+}
+
+export function useRegisterTreemap(cfg: TreemapConfig): string {
+  const store = useChartStore();
+  const id = useId();
+  const stable = useStable(cfg, shallowEqualTreemapConfig);
+
+  useIsomorphicLayoutEffect(() => {
+    store.getState().registerTreemap(id, stable);
+    return () => {
+      store.getState().unregisterTreemap(id);
+    };
+  }, [store, id, stable]);
+
+  return id;
+}
+
+export function useTreemapLayout<
+  T extends TreemapNodeBase = TreemapNodeBase,
+>(id: string): HierarchyRectangularNode<TreemapNode<T>> | null {
+  const layout = useStore(useChartStore(), (s) => s.treemapLayouts.get(id));
+  // Store holds layouts parameterized to the base node; consumers carry T.
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return (layout ?? null) as HierarchyRectangularNode<TreemapNode<T>> | null;
 }
 
 // Preserves object identity across renders when a shallow-compare says the

@@ -18,7 +18,7 @@ export interface XAxisProps {
 
 export function XAxis({
   density = "medium",
-  preserve = "start",
+  preserve = "auto",
   anchorLabelsToEdges = false,
   preferredTickCount,
   tickFormat,

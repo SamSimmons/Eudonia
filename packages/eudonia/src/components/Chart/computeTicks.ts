@@ -1,4 +1,4 @@
-import { measureText } from "./measureText";
+import { measureText } from "./textMetrics";
 import type { XScale, XTickValue, YScale } from "./scales";
 
 export type TickAnchor = "start" | "middle" | "end";
@@ -9,8 +9,12 @@ export type TickDensity = "low" | "medium" | "high";
 // stride widens. `start` and `end` give regular intervals and let the other
 // endpoint drop if stride doesn't land on it (Observable Plot / Highcharts
 // style). `both` force-anchors both ends and accepts an irregular trailing
-// gap (Recharts' `preserveStartEnd`).
-export type TickPreserve = "start" | "end" | "both";
+// gap (Recharts' `preserveStartEnd`). `auto` resolves per scale kind:
+// categorical → `both` (showing Jan and Dec is more informative than Jan
+// alone), continuous → `start` (d3's nice-number ticks already anchor well).
+export type TickPreserve = "auto" | "start" | "end" | "both";
+
+type ResolvedPreserve = Exclude<TickPreserve, "auto">;
 
 export interface Tick<V> {
   value: V;
@@ -24,10 +28,11 @@ interface LaidOutTick<V> extends Tick<V> {
   rightExt: number;
 }
 
-// Target pixel-spacing per tick. Controls how many candidates the scale is
-// asked to produce (or how many band-categories are kept) before measurement
-// decides whether they fit. Y defaults are tighter because y-labels are single
-// lines with no horizontal spread.
+// Target pixel-spacing per tick for *continuous* axes, where d3 generates the
+// candidate values via `.ticks(count)`. Categorical axes ignore this — every
+// domain value is already a candidate, so measurement alone decides how many
+// fit. Y defaults are tighter because y-labels are single lines with no
+// horizontal spread.
 const X_BUDGETS: Record<TickDensity, number> = { low: 120, medium: 80, high: 50 };
 const Y_BUDGETS: Record<TickDensity, number> = { low: 80, medium: 50, high: 35 };
 
@@ -48,13 +53,78 @@ export function computeXTicks(
   preferredTickCount: number | undefined,
   tickFormat: (v: XTickValue) => string,
 ): Tick<XTickValue>[] {
+  const isCategorical = scale.kind === "band" || scale.kind === "point";
+  const resolvedPreserve: ResolvedPreserve =
+    preserve === "auto" ? (isCategorical ? "both" : "start") : preserve;
+
+  if (isCategorical) {
+    return computeCategoricalXTicks(
+      scale,
+      resolvedPreserve,
+      anchorLabelsToEdges,
+      preferredTickCount,
+      tickFormat,
+    );
+  }
+  return computeContinuousXTicks(
+    scale,
+    innerWidth,
+    density,
+    resolvedPreserve,
+    anchorLabelsToEdges,
+    preferredTickCount,
+    tickFormat,
+  );
+}
+
+// Every domain value is a candidate. Measurement drives the stride — we never
+// collapse below what actually fits, regardless of density. `preferredTickCount`
+// still works as an explicit ceiling for users who want one.
+function computeCategoricalXTicks(
+  scale: XScale,
+  preserve: ResolvedPreserve,
+  anchorLabelsToEdges: boolean,
+  preferredTickCount: number | undefined,
+  tickFormat: (v: XTickValue) => string,
+): Tick<XTickValue>[] {
+  const candidates = xCandidates(scale, 0);
+  const laidOut = layoutXTicks(candidates, scale, anchorLabelsToEdges, tickFormat);
+  const minStride =
+    preferredTickCount !== undefined
+      ? Math.max(1, Math.ceil(laidOut.length / Math.max(1, preferredTickCount)))
+      : 1;
+  return pruneToFit(laidOut, preserve, minStride).map(stripLayout);
+}
+
+// d3 generates candidate tick values via `.ticks(target)` where target comes
+// from the pixel budget. Measurement still prunes if the chosen candidates
+// happen to overlap (e.g. wide custom `tickFormat`).
+function computeContinuousXTicks(
+  scale: XScale,
+  innerWidth: number,
+  density: TickDensity,
+  preserve: ResolvedPreserve,
+  anchorLabelsToEdges: boolean,
+  preferredTickCount: number | undefined,
+  tickFormat: (v: XTickValue) => string,
+): Tick<XTickValue>[] {
   const target =
     preferredTickCount ??
     Math.max(1, Math.floor(innerWidth / X_BUDGETS[density]));
-
   const candidates = xCandidates(scale, target);
+  const laidOut = layoutXTicks(candidates, scale, anchorLabelsToEdges, tickFormat);
+  const minStride = Math.max(1, Math.ceil(laidOut.length / Math.max(1, target)));
+  return pruneToFit(laidOut, preserve, minStride).map(stripLayout);
+}
+
+function layoutXTicks(
+  candidates: readonly XCandidate[],
+  scale: XScale,
+  anchorLabelsToEdges: boolean,
+  tickFormat: (v: XTickValue) => string,
+): LaidOutTick<XTickValue>[] {
   const ends = anchorLabelsToEdges ? domainEnds(scale) : null;
-  const laidOut = candidates.map<LaidOutTick<XTickValue>>(({ value, position }) => {
+  return candidates.map<LaidOutTick<XTickValue>>(({ value, position }) => {
     const label = tickFormat(value);
     const anchor = ends ? edgeAnchor(value, ends) : "middle";
     const width = measureText(label, LABEL_FONT);
@@ -67,8 +137,6 @@ export function computeXTicks(
       rightExt: anchor === "middle" ? width / 2 : anchor === "start" ? width : 0,
     };
   });
-
-  return pruneToFit(laidOut, preserve, target).map(stripLayout);
 }
 
 export function computeYTicks(
@@ -93,9 +161,10 @@ export function computeYTicks(
     rightExt: half,
   }));
 
+  const minStride = Math.max(1, Math.ceil(laidOut.length / Math.max(1, target)));
   // Y force-preserves both endpoints: top/bottom ticks communicate the data
   // range, and Y doesn't have X's calendar-style directional preference.
-  return pruneToFit(laidOut, "both", target).map(stripLayout);
+  return pruneToFit(laidOut, "both", minStride).map(stripLayout);
 }
 
 function stripLayout<V>(t: LaidOutTick<V>): Tick<V> {
@@ -174,12 +243,12 @@ function sameValue(a: XTickValue, b: XTickValue): boolean {
 
 // Picks a subset of ticks that doesn't overlap on screen by "striding" —
 // keeping every nth tick and dropping the rest. We want the smallest stride
-// that fits (subject to the target-count floor), so we show as many labels
-// as possible without exceeding the requested count.
+// that fits (subject to the `minStride` floor), so we show as many labels as
+// possible without going tighter than the caller requested.
 //
-// The `target` parameter becomes a ceiling on tick count: stride is floored
-// at `ceil(n / target)`. This is what lets `preferredTickCount` actually cap
-// categorical axes where every domain value is a candidate.
+// For categorical axes `minStride=1` — measurement alone decides. For
+// continuous axes the caller derives `minStride` from the pixel budget so
+// strides below that never even get probed.
 //
 // Naive approach: try stride 1, 2, 3, ... until one fits. For 500 categories
 // that's up to 500 trials, each walking through its picks — O(n log n) total.
@@ -202,19 +271,19 @@ function sameValue(a: XTickValue, b: XTickValue): boolean {
 // nothing.
 function pruneToFit<V>(
   ticks: readonly LaidOutTick<V>[],
-  preserve: TickPreserve,
-  target: number,
+  preserve: ResolvedPreserve,
+  minStride: number,
 ): LaidOutTick<V>[] {
   if (ticks.length <= 1) return [...ticks];
 
   const n = ticks.length;
-  const minStride = Math.max(1, Math.ceil(n / Math.max(1, target)));
-  // Seed lastFail so phase-2 binary search can't pick a stride below minStride.
-  let lastFail = minStride - 1;
+  const floor = Math.max(1, minStride);
+  // Seed lastFail so phase-2 binary search can't pick a stride below floor.
+  let lastFail = floor - 1;
   let firstFit = 0;
 
   // Phase 1: double the stride until something fits, or we run out of ticks.
-  for (let s = minStride; s <= n; ) {
+  for (let s = floor; s <= n; ) {
     if (fitsAtStride(ticks, s, preserve)) {
       firstFit = s;
       break;
@@ -259,7 +328,7 @@ function pruneToFit<V>(
 function fitsAtStride<V>(
   ticks: readonly LaidOutTick<V>[],
   stride: number,
-  preserve: TickPreserve,
+  preserve: ResolvedPreserve,
 ): boolean {
   return fitsWithoutOverlap(stridedPick(ticks, stride, preserve));
 }
@@ -279,7 +348,7 @@ function fitsWithoutOverlap<V>(ticks: readonly LaidOutTick<V>[]): boolean {
 function stridedPick<V>(
   ticks: readonly LaidOutTick<V>[],
   stride: number,
-  preserve: TickPreserve,
+  preserve: ResolvedPreserve,
 ): LaidOutTick<V>[] {
   const n = ticks.length;
   const offset = preserve === "end" ? (n - 1) % stride : 0;

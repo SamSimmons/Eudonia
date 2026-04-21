@@ -10,18 +10,15 @@ import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 
 import styles from "./Chart.module.css";
 import { ChartSurface } from "./ChartSurface";
+import type { ChartData } from "./dataShape";
 import type { ChartXType } from "./scales";
-import {
-  ChartStoreContext,
-  createChartStore,
-  type ChartDatum,
-  type ChartMargin,
-} from "./store";
+import type { ChartMargin } from "./state-types";
+import { ChartStoreContext, createChartStore } from "./store";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 
 export interface ChartProps extends Omit<DivProps, "children"> {
-  data: readonly ChartDatum[];
+  data: ChartData;
   xKey?: string;
   yKeys?: readonly string[];
   yDomain?: readonly [number, number];

@@ -1,7 +1,8 @@
 import { scaleBand, scaleLinear, scalePoint, scaleTime } from "@visx/scale";
 import { extent } from "d3-array";
 
-import type { ChartDatum } from "./store";
+import type { ChartDatum } from "./dataShape";
+import type { CategoricalScalePreference } from "./state-types";
 
 export type BandScale = ReturnType<typeof scaleBand<string>>;
 export type PointScale = ReturnType<typeof scalePoint<string>>;
@@ -131,4 +132,43 @@ export function buildYScale(
     }
   }
   return scaleLinear<number>({ domain, range: [height, 0] });
+}
+
+// Scale-config inference — picks xKey / yKeys / xType from the dataset when
+// the author hasn't supplied them. Lives alongside the builders because the
+// output of these functions is exactly what `buildXScale` / `buildYScale`
+// consume.
+
+export function inferXKey(data: readonly ChartDatum[]): string {
+  if (data.length === 0) return "x";
+  const first = data[0]!;
+  for (const [k, v] of Object.entries(first)) {
+    if (typeof v === "string" || v instanceof Date) return k;
+  }
+  return Object.keys(first)[0] ?? "x";
+}
+
+export function inferYKeys(
+  data: readonly ChartDatum[],
+  xKey: string,
+): string[] {
+  if (data.length === 0) return [];
+  return Object.entries(data[0]!)
+    .filter(([k, v]) => k !== xKey && typeof v === "number")
+    .map(([k]) => k);
+}
+
+// Categorical (string) x resolves to band or point based on what marks want.
+// Default is `point` so the first and last category sit at the chart edges —
+// bars/heatmap-rects opt in to `band` via registration since they need a width.
+export function inferXType(
+  data: readonly ChartDatum[],
+  xKey: string,
+  categoricalPreference: CategoricalScalePreference,
+): ChartXType {
+  if (data.length === 0) return "linear";
+  const first = data[0]![xKey];
+  if (first instanceof Date) return "time";
+  if (typeof first === "string") return categoricalPreference;
+  return "linear";
 }

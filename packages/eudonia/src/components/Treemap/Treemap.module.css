@@ -1,0 +1,22 @@
+.leafRect {
+  pointer-events: auto;
+}
+
+.branchRect {
+  pointer-events: auto;
+}
+
+.label {
+  fill: var(--eudonia-chart-treemap-label, oklch(0.98 0 0));
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.value {
+  fill: var(--eudonia-chart-treemap-value, oklch(0.98 0 0 / 0.85));
+  font-size: 0.7rem;
+  pointer-events: none;
+  user-select: none;
+}
