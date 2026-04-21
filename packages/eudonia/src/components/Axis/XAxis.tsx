@@ -3,14 +3,14 @@ import { AxisBottom } from "@visx/axis";
 import styles from "../Chart/Chart.module.css";
 import type { TickDensity, TickPreserve } from "../Chart/computeTicks";
 import { useInnerSize, useRegisterXAxis, useXScale, useXTicks } from "../Chart/hooks";
-import type { XTickValue } from "../Chart/scales";
+import type { TickValue } from "../Chart/scales";
 
 export interface XAxisProps {
   density?: TickDensity;
   preserve?: TickPreserve;
   anchorLabelsToEdges?: boolean;
   preferredTickCount?: number;
-  tickFormat?: (value: XTickValue) => string;
+  tickFormat?: (value: TickValue) => string;
   hideAxisLine?: boolean;
   hideTicks?: boolean;
   display?: boolean;

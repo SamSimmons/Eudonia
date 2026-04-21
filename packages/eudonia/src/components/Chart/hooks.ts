@@ -20,7 +20,7 @@ import {
   shallowEqualXAxisConfig,
   shallowEqualYAxisConfig,
 } from "./equality";
-import type { XScale, XTickValue, YScale } from "./scales";
+import type { Scale, TickValue } from "./scales";
 import type {
   ChartMargin,
   MarkRegistration,
@@ -98,28 +98,33 @@ export function useChartSurface(): {
 }
 
 const selectXScale = (s: ChartState) => s.xScale;
-export function useXScale(): XScale {
+export function useXScale(): Scale {
   return useStore(useChartStore(), selectXScale);
 }
 
 const selectYScale = (s: ChartState) => s.yScale;
-export function useYScale(): YScale {
+export function useYScale(): Scale {
   return useStore(useChartStore(), selectYScale);
 }
 
 const selectXTicks = (s: ChartState) => s.xTicks;
-export function useXTicks(): Tick<XTickValue>[] {
+export function useXTicks(): Tick<TickValue>[] {
   return useStore(useChartStore(), selectXTicks);
 }
 
 const selectYTicks = (s: ChartState) => s.yTicks;
-export function useYTicks(): Tick<number>[] {
+export function useYTicks(): Tick<TickValue>[] {
   return useStore(useChartStore(), selectYTicks);
 }
 
 const selectResolvedXKey = (s: ChartState) => s.resolvedXKey;
 export function useResolvedXKey(): string {
   return useStore(useChartStore(), selectResolvedXKey);
+}
+
+const selectResolvedYKey = (s: ChartState) => s.resolvedYKey;
+export function useResolvedYKey(): string {
+  return useStore(useChartStore(), selectResolvedYKey);
 }
 
 export function useRegisterMark(reg: MarkRegistration): void {

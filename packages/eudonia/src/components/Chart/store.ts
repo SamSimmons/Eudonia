@@ -14,7 +14,7 @@ import {
   shallowEqualYAxisConfig,
   shallowEqualYDomain,
 } from "./equality";
-import type { ChartXType } from "./scales";
+import type { ScaleKind } from "./scales";
 import type {
   ChartMargin,
   ChartStateDerived,
@@ -30,7 +30,9 @@ interface ChartStateActions {
   setSize: (width: number, height: number) => void;
   setAuthoredConfig: (cfg: {
     xKey?: string;
-    xType?: ChartXType;
+    xType?: ScaleKind;
+    yKey?: string;
+    yType?: ScaleKind;
     yKeys?: readonly string[];
     yDomain?: readonly [number, number];
   }) => void;
@@ -50,7 +52,9 @@ export type ChartStore = StoreApi<ChartState>;
 export interface CreateChartStoreInit {
   data: ChartData;
   xKey?: string;
-  xType?: ChartXType;
+  xType?: ScaleKind;
+  yKey?: string;
+  yType?: ScaleKind;
   yKeys?: readonly string[];
   yDomain?: readonly [number, number];
   margin: ChartMargin;
@@ -64,6 +68,8 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
       data: init.data,
       authoredXKey: init.xKey,
       authoredXType: init.xType,
+      authoredYKey: init.yKey,
+      authoredYType: init.yType,
       authoredYKeys: init.yKeys,
       yDomain: init.yDomain,
       margin: init.margin,
@@ -97,7 +103,7 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           const next = { ...prev, width, height };
           return { ...next, ...derive(prev, next) };
         }),
-      setAuthoredConfig: ({ xKey, xType, yKeys, yDomain }) =>
+      setAuthoredConfig: ({ xKey, xType, yKey, yType, yKeys, yDomain }) =>
         set((prev) => {
           // Preserve old reference identity when values are equal so derive()
           // sees an unchanged input and skips downstream recomputes.
@@ -110,6 +116,8 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           if (
             prev.authoredXKey === xKey &&
             prev.authoredXType === xType &&
+            prev.authoredYKey === yKey &&
+            prev.authoredYType === yType &&
             prev.authoredYKeys === nextYKeys &&
             prev.yDomain === nextYDomain
           ) {
@@ -119,6 +127,8 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
             ...prev,
             authoredXKey: xKey,
             authoredXType: xType,
+            authoredYKey: yKey,
+            authoredYType: yType,
             authoredYKeys: nextYKeys,
             yDomain: nextYDomain,
           };

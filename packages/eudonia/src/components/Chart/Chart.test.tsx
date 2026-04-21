@@ -6,6 +6,7 @@ import { cleanup, renderHook } from "@testing-library/react";
 
 import { Chart, type ChartProps } from "./Chart";
 import { useResolvedXKey, useXScale, useYScale } from "./hooks";
+import type { Scale } from "./scales";
 
 afterEach(() => {
   cleanup();
@@ -36,10 +37,17 @@ function dateDomain(domain: readonly unknown[]): [Date, Date] {
   return [a, b];
 }
 
+function linearYDomain(ctx: { yScale: Scale }): number[] {
+  if (ctx.yScale.kind !== "linear") {
+    throw new Error(`expected linear y scale, got ${ctx.yScale.kind}`);
+  }
+  return ctx.yScale.scale.domain();
+}
+
 describe("Chart", () => {
   test("renders with empty data without crashing", () => {
     const ctx = renderChart({ data: [] });
-    expect(ctx.yScale.domain()).toEqual([0, 1]);
+    expect(linearYDomain(ctx)).toEqual([0, 1]);
   });
 
   test("handles a single data point", () => {
@@ -48,7 +56,7 @@ describe("Chart", () => {
       xType: "linear",
     });
     expect(ctx.xScale.scale.domain()).toEqual([5, 5]);
-    expect(ctx.yScale.domain()).toEqual([10 - 0.5, 10 + 0.5]);
+    expect(linearYDomain(ctx)).toEqual([10 - 0.5, 10 + 0.5]);
   });
 
   test("pads degenerate y domain so flat series renders centered", () => {
@@ -60,10 +68,11 @@ describe("Chart", () => {
       ],
       xType: "linear",
     });
-    const [lo, hi] = ctx.yScale.domain();
+    const [lo, hi] = linearYDomain(ctx);
     expect(lo).toBeLessThan(7);
     expect(hi).toBeGreaterThan(7);
-    const mapped = ctx.yScale(7);
+    if (ctx.yScale.kind !== "linear") throw new Error("expected linear");
+    const mapped = ctx.yScale.scale(7);
     expect(Number.isFinite(mapped)).toBe(true);
     expect(mapped).toBeCloseTo(100, 5);
   });
@@ -76,8 +85,9 @@ describe("Chart", () => {
       ],
       xType: "linear",
     });
-    expect(ctx.yScale.domain()).toEqual([-1, 1]);
-    expect(ctx.yScale(0)).toBeCloseTo(100, 5);
+    expect(linearYDomain(ctx)).toEqual([-1, 1]);
+    if (ctx.yScale.kind !== "linear") throw new Error("expected linear");
+    expect(ctx.yScale.scale(0)).toBeCloseTo(100, 5);
   });
 
   test("ignores non-number y values when inferring domain", () => {
@@ -91,7 +101,7 @@ describe("Chart", () => {
       yKeys: ["y"],
       xType: "linear",
     });
-    expect(ctx.yScale.domain()).toEqual([10, 30]);
+    expect(linearYDomain(ctx)).toEqual([10, 30]);
   });
 
   test("does not stack overflow on large datasets", () => {
@@ -99,7 +109,7 @@ describe("Chart", () => {
     const data = Array.from({ length: n }, (_, i) => ({ x: i, y: i % 97 }));
     const ctx = renderChart({ data, xType: "linear" });
     expect(ctx.xScale.scale.domain()).toEqual([0, n - 1]);
-    expect(ctx.yScale.domain()).toEqual([0, 96]);
+    expect(linearYDomain(ctx)).toEqual([0, 96]);
   });
 
   test("does not stack overflow on large time datasets", () => {
@@ -149,7 +159,7 @@ describe("Chart", () => {
       yKeys: ["a", "b"],
       xType: "linear",
     });
-    expect(ctx.yScale.domain()).toEqual([-2, 20]);
+    expect(linearYDomain(ctx)).toEqual([-2, 20]);
   });
 
   test("respects explicit yDomain override", () => {
@@ -158,6 +168,22 @@ describe("Chart", () => {
       yDomain: [0, 100],
       xType: "linear",
     });
-    expect(ctx.yScale.domain()).toEqual([0, 100]);
+    expect(linearYDomain(ctx)).toEqual([0, 100]);
+  });
+
+  test("supports categorical band y for horizontal charts", () => {
+    const ctx = renderChart({
+      data: [
+        { value: 10, cat: "a" },
+        { value: 20, cat: "b" },
+      ],
+      xType: "linear",
+      xKey: "value",
+      yType: "band",
+      yKey: "cat",
+    });
+    expect(ctx.yScale.kind).toBe("band");
+    if (ctx.yScale.kind !== "band") throw new Error("expected band");
+    expect(ctx.yScale.scale.domain()).toEqual(["a", "b"]);
   });
 });

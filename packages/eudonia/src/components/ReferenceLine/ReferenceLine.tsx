@@ -1,6 +1,6 @@
 import styles from "../Chart/Chart.module.css";
 import { useInnerSize, useXScale, useYScale } from "../Chart/hooks";
-import { getX } from "../Chart/scales";
+import { getX, getY } from "../Chart/scales";
 
 interface CommonReferenceLineProps {
   stroke?: string;
@@ -12,10 +12,12 @@ interface CommonReferenceLineProps {
 
 // `x` and `y` are mutually exclusive: a reference line is either horizontal
 // (y) or vertical (x), never both. The `?: never` halves enforce this at the
-// type level so consumers get a TS error instead of a runtime throw.
-// `x` is constrained to the value types the three xScale kinds accept.
+// type level so consumers get a TS error instead of a runtime throw. Both `x`
+// and `y` accept any of the four scale-kind value types; getX/getY returns
+// NaN if the value doesn't match the current scale kind, in which case we
+// skip rendering.
 export type ReferenceLineProps =
-  | (CommonReferenceLineProps & { y: number; x?: never })
+  | (CommonReferenceLineProps & { y: string | number | Date; x?: never })
   | (CommonReferenceLineProps & { x: string | number | Date; y?: never });
 
 export function ReferenceLine({
@@ -49,7 +51,8 @@ export function ReferenceLine({
   // placement, and treat collisions with data as a designer concern.
 
   if (y !== undefined) {
-    const yPos = yScale(y);
+    const yPos = getY(y, yScale);
+    if (!Number.isFinite(yPos)) return null;
     return (
       <g className={className}>
         <line

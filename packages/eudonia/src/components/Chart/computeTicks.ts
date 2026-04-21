@@ -1,5 +1,7 @@
 import { measureText } from "./textMetrics";
-import type { XScale, XTickValue, YScale } from "./scales";
+import type { Scale, TickValue } from "./scales";
+// X and Y share the same Scale union, so tick computation for Y reuses the X
+// candidate/pruning helpers — only layout (measurement extents) differs.
 
 export type TickAnchor = "start" | "middle" | "end";
 
@@ -45,14 +47,14 @@ const LABEL_FONT = "11.2px system-ui, -apple-system, sans-serif";
 const LABEL_FONT_SIZE_PX = 11.2;
 
 export function computeXTicks(
-  scale: XScale,
+  scale: Scale,
   innerWidth: number,
   density: TickDensity,
   preserve: TickPreserve,
   anchorLabelsToEdges: boolean,
   preferredTickCount: number | undefined,
-  tickFormat: (v: XTickValue) => string,
-): Tick<XTickValue>[] {
+  tickFormat: (v: TickValue) => string,
+): Tick<TickValue>[] {
   const isCategorical = scale.kind === "band" || scale.kind === "point";
   const resolvedPreserve: ResolvedPreserve =
     preserve === "auto" ? (isCategorical ? "both" : "start") : preserve;
@@ -81,12 +83,12 @@ export function computeXTicks(
 // collapse below what actually fits, regardless of density. `preferredTickCount`
 // still works as an explicit ceiling for users who want one.
 function computeCategoricalXTicks(
-  scale: XScale,
+  scale: Scale,
   preserve: ResolvedPreserve,
   anchorLabelsToEdges: boolean,
   preferredTickCount: number | undefined,
-  tickFormat: (v: XTickValue) => string,
-): Tick<XTickValue>[] {
+  tickFormat: (v: TickValue) => string,
+): Tick<TickValue>[] {
   const candidates = xCandidates(scale, 0);
   const laidOut = layoutXTicks(candidates, scale, anchorLabelsToEdges, tickFormat);
   const minStride =
@@ -100,14 +102,14 @@ function computeCategoricalXTicks(
 // from the pixel budget. Measurement still prunes if the chosen candidates
 // happen to overlap (e.g. wide custom `tickFormat`).
 function computeContinuousXTicks(
-  scale: XScale,
+  scale: Scale,
   innerWidth: number,
   density: TickDensity,
   preserve: ResolvedPreserve,
   anchorLabelsToEdges: boolean,
   preferredTickCount: number | undefined,
-  tickFormat: (v: XTickValue) => string,
-): Tick<XTickValue>[] {
+  tickFormat: (v: TickValue) => string,
+): Tick<TickValue>[] {
   const target =
     preferredTickCount ??
     Math.max(1, Math.floor(innerWidth / X_BUDGETS[density]));
@@ -119,12 +121,12 @@ function computeContinuousXTicks(
 
 function layoutXTicks(
   candidates: readonly XCandidate[],
-  scale: XScale,
+  scale: Scale,
   anchorLabelsToEdges: boolean,
-  tickFormat: (v: XTickValue) => string,
-): LaidOutTick<XTickValue>[] {
+  tickFormat: (v: TickValue) => string,
+): LaidOutTick<TickValue>[] {
   const ends = anchorLabelsToEdges ? domainEnds(scale) : null;
-  return candidates.map<LaidOutTick<XTickValue>>(({ value, position }) => {
+  return candidates.map<LaidOutTick<TickValue>>(({ value, position }) => {
     const label = tickFormat(value);
     const anchor = ends ? edgeAnchor(value, ends) : "middle";
     const width = measureText(label, LABEL_FONT);
@@ -140,31 +142,49 @@ function layoutXTicks(
 }
 
 export function computeYTicks(
-  scale: YScale,
+  scale: Scale,
   innerHeight: number,
   density: TickDensity,
   preferredTickCount: number | undefined,
-  tickFormat: (v: number) => string,
-): Tick<number>[] {
+  tickFormat: (v: TickValue) => string,
+): Tick<TickValue>[] {
+  const isCategorical = scale.kind === "band" || scale.kind === "point";
+  if (isCategorical) {
+    const candidates = xCandidates(scale, 0);
+    const laidOut = layoutYTicks(candidates, tickFormat);
+    const minStride =
+      preferredTickCount !== undefined
+        ? Math.max(1, Math.ceil(laidOut.length / Math.max(1, preferredTickCount)))
+        : 1;
+    // Y force-preserves both endpoints: top/bottom ticks communicate the data
+    // range, and Y doesn't have X's calendar-style directional preference.
+    return pruneToFit(laidOut, "both", minStride).map(stripLayout);
+  }
+
   const target =
     preferredTickCount ??
     Math.max(1, Math.floor(innerHeight / Y_BUDGETS[density]));
+  const candidates = xCandidates(scale, target);
+  const laidOut = layoutYTicks(candidates, tickFormat);
+  const minStride = Math.max(1, Math.ceil(laidOut.length / Math.max(1, target)));
+  return pruneToFit(laidOut, "both", minStride).map(stripLayout);
+}
 
-  // Y-labels are all right-aligned to the axis; size-along-axis is line height.
+// Y-labels are all right-aligned to the axis; size-along-axis is line height,
+// so left/right extents are half-font regardless of the label string.
+function layoutYTicks(
+  candidates: readonly XCandidate[],
+  tickFormat: (v: TickValue) => string,
+): LaidOutTick<TickValue>[] {
   const half = LABEL_FONT_SIZE_PX / 2;
-  const laidOut = scale.ticks(target).map<LaidOutTick<number>>((value) => ({
+  return candidates.map<LaidOutTick<TickValue>>(({ value, position }) => ({
     value,
     label: tickFormat(value),
-    position: scale(value) ?? NaN,
+    position,
     anchor: "end",
     leftExt: half,
     rightExt: half,
   }));
-
-  const minStride = Math.max(1, Math.ceil(laidOut.length / Math.max(1, target)));
-  // Y force-preserves both endpoints: top/bottom ticks communicate the data
-  // range, and Y doesn't have X's calendar-style directional preference.
-  return pruneToFit(laidOut, "both", minStride).map(stripLayout);
 }
 
 function stripLayout<V>(t: LaidOutTick<V>): Tick<V> {
@@ -172,11 +192,11 @@ function stripLayout<V>(t: LaidOutTick<V>): Tick<V> {
 }
 
 interface XCandidate {
-  value: XTickValue;
+  value: TickValue;
   position: number;
 }
 
-function xCandidates(scale: XScale, target: number): XCandidate[] {
+function xCandidates(scale: Scale, target: number): XCandidate[] {
   switch (scale.kind) {
     case "band": {
       const half = scale.scale.bandwidth() / 2;
@@ -204,11 +224,11 @@ function xCandidates(scale: XScale, target: number): XCandidate[] {
 }
 
 interface DomainEnds {
-  first: XTickValue | undefined;
-  last: XTickValue | undefined;
+  first: TickValue | undefined;
+  last: TickValue | undefined;
 }
 
-function domainEnds(scale: XScale): DomainEnds {
+function domainEnds(scale: Scale): DomainEnds {
   switch (scale.kind) {
     case "band":
     case "point": {
@@ -230,13 +250,13 @@ function domainEnds(scale: XScale): DomainEnds {
 // domain edge — Vega-Lite's `labelFlush` semantics. For band scales that means
 // the first/last category; for time/linear it means the tick value equals the
 // scale domain's min/max, which is rare unless the domain is authored that way.
-function edgeAnchor(value: XTickValue, ends: DomainEnds): TickAnchor {
+function edgeAnchor(value: TickValue, ends: DomainEnds): TickAnchor {
   if (ends.first !== undefined && sameValue(value, ends.first)) return "start";
   if (ends.last !== undefined && sameValue(value, ends.last)) return "end";
   return "middle";
 }
 
-function sameValue(a: XTickValue, b: XTickValue): boolean {
+function sameValue(a: TickValue, b: TickValue): boolean {
   if (a instanceof Date && b instanceof Date) return a.valueOf() === b.valueOf();
   return a === b;
 }

@@ -3,11 +3,12 @@ import { AxisLeft } from "@visx/axis";
 import styles from "../Chart/Chart.module.css";
 import type { TickDensity } from "../Chart/computeTicks";
 import { useRegisterYAxis, useYScale, useYTicks } from "../Chart/hooks";
+import type { TickValue } from "../Chart/scales";
 
 export interface YAxisProps {
   density?: TickDensity;
   preferredTickCount?: number;
-  tickFormat?: (value: number) => string;
+  tickFormat?: (value: TickValue) => string;
   hideAxisLine?: boolean;
   hideTicks?: boolean;
   display?: boolean;
@@ -34,7 +35,7 @@ export function YAxis({
 
   return (
     <AxisLeft
-      scale={yScale}
+      scale={yScale.scale}
       stroke="var(--eudonia-chart-axis, oklch(0.5 0 0))"
       tickStroke="var(--eudonia-chart-axis, oklch(0.5 0 0))"
       hideAxisLine={hideAxisLine}

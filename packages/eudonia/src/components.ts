@@ -10,7 +10,7 @@ export type {
   YAxisConfig,
 } from "./components/Chart/state-types";
 export type { ChartState, ChartStore } from "./components/Chart/store";
-export type { ChartXType } from "./components/Chart/scales";
+export type { Scale, ScaleKind, TickValue } from "./components/Chart/scales";
 export type { TickDensity, TickPreserve } from "./components/Chart/computeTicks";
 export {
   useChart,
@@ -23,6 +23,7 @@ export {
   useXTicks,
   useYTicks,
   useResolvedXKey,
+  useResolvedYKey,
   useRegisterMark,
   useRegisterXAxis,
   useRegisterYAxis,

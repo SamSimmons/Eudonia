@@ -11,7 +11,7 @@ import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import styles from "./Chart.module.css";
 import { ChartSurface } from "./ChartSurface";
 import type { ChartData } from "./dataShape";
-import type { ChartXType } from "./scales";
+import type { ScaleKind } from "./scales";
 import type { ChartMargin } from "./state-types";
 import { ChartStoreContext, createChartStore } from "./store";
 
@@ -20,9 +20,11 @@ type DivProps = ComponentPropsWithoutRef<"div">;
 export interface ChartProps extends Omit<DivProps, "children"> {
   data: ChartData;
   xKey?: string;
+  yKey?: string;
   yKeys?: readonly string[];
   yDomain?: readonly [number, number];
-  xType?: ChartXType;
+  xType?: ScaleKind;
+  yType?: ScaleKind;
   margin?: Partial<ChartMargin>;
   width?: number;
   height?: number;
@@ -34,9 +36,11 @@ const DEFAULT_MARGIN: ChartMargin = { top: 0, right: 0, bottom: 0, left: 0 };
 export function Chart({
   data,
   xKey,
+  yKey,
   yKeys,
   yDomain,
   xType,
+  yType,
   margin,
   width,
   height,
@@ -57,6 +61,8 @@ export function Chart({
       data,
       xKey,
       xType,
+      yKey,
+      yType,
       yKeys,
       yDomain,
       margin: resolvedMargin,
@@ -74,8 +80,8 @@ export function Chart({
   }, [store, resolvedMargin]);
 
   useIsomorphicLayoutEffect(() => {
-    store.getState().setAuthoredConfig({ xKey, xType, yKeys, yDomain });
-  }, [store, xKey, xType, yKeys, yDomain]);
+    store.getState().setAuthoredConfig({ xKey, xType, yKey, yType, yKeys, yDomain });
+  }, [store, xKey, xType, yKey, yType, yKeys, yDomain]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 

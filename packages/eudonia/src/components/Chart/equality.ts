@@ -32,7 +32,8 @@ export function shallowEqualYDomain(
 }
 
 export function shallowEqualMark(a: MarkRegistration, b: MarkRegistration): boolean {
-  if (a.xCategoricalPreference !== b.xCategoricalPreference) return false;
+  if (a.categoricalPreference !== b.categoricalPreference) return false;
+  if (a.includeZero !== b.includeZero) return false;
   return sameDataKey(a.dataKey, b.dataKey);
 }
 

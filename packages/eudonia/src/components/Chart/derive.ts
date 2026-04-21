@@ -23,8 +23,9 @@ import {
   buildYScale,
   inferXKey,
   inferXType,
+  inferYKey,
   inferYKeys,
-  type XTickValue,
+  type TickValue,
 } from "./scales";
 import type {
   CategoricalScalePreference,
@@ -95,6 +96,22 @@ export function derive(
           resolveCategoricalPreference(next.markRegistrations),
         ));
 
+  const resolvedYKey =
+    prev &&
+    prev.data === next.data &&
+    prev.authoredYKey === next.authoredYKey &&
+    prev.resolvedXKey === resolvedXKey
+      ? prev.resolvedYKey
+      : (next.authoredYKey ?? inferYKey(flat, resolvedXKey));
+
+  // Y defaults to linear unless the author opts into categorical/time. Unlike
+  // X, we don't auto-detect — horizontal charts are rare enough that silently
+  // flipping a numeric axis to categorical on data shape would be a footgun.
+  const resolvedYType =
+    prev && prev.authoredYType === next.authoredYType
+      ? prev.resolvedYType
+      : (next.authoredYType ?? "linear");
+
   const resolvedYKeys =
     prev &&
     prev.data === next.data &&
@@ -116,14 +133,27 @@ export function derive(
       ? prev.xScale
       : buildXScale(flat, resolvedXKey, resolvedXType, innerWidth);
 
+  const includeZeroInY = resolveIncludeZero(next.markRegistrations);
+
   const yScale =
     prev &&
     prev.data === next.data &&
+    prev.resolvedYKey === resolvedYKey &&
+    prev.resolvedYType === resolvedYType &&
     prev.resolvedYKeys === resolvedYKeys &&
     prev.yDomain === next.yDomain &&
-    prev.innerHeight === innerHeight
+    prev.innerHeight === innerHeight &&
+    prev.markRegistrations === next.markRegistrations
       ? prev.yScale
-      : buildYScale(flat, resolvedYKeys, next.yDomain, innerHeight);
+      : buildYScale(
+          flat,
+          resolvedYKey,
+          resolvedYKeys,
+          resolvedYType,
+          next.yDomain,
+          innerHeight,
+          includeZeroInY,
+        );
 
   const xTicks =
     prev &&
@@ -160,6 +190,8 @@ export function derive(
   return {
     resolvedXKey,
     resolvedXType,
+    resolvedYKey,
+    resolvedYType,
     resolvedYKeys,
     innerWidth,
     innerHeight,
@@ -249,9 +281,18 @@ function resolveCategoricalPreference(
   regs: ReadonlyMap<string, MarkRegistration>,
 ): CategoricalScalePreference {
   for (const r of regs.values()) {
-    if (r.xCategoricalPreference === "band") return "band";
+    if (r.categoricalPreference === "band") return "band";
   }
   return "point";
+}
+
+function resolveIncludeZero(
+  regs: ReadonlyMap<string, MarkRegistration>,
+): boolean {
+  for (const r of regs.values()) {
+    if (r.includeZero) return true;
+  }
+  return false;
 }
 
 function resolveYKeys(
@@ -292,11 +333,12 @@ function effectiveAxisConfig<C>(regs: ReadonlyMap<string, C>, defaults: C): C {
   return last ?? defaults;
 }
 
-function defaultXFormat(v: XTickValue): string {
+function defaultXFormat(v: TickValue): string {
   if (v instanceof Date) return v.toLocaleDateString();
   return String(v);
 }
 
-function defaultYFormat(v: number): string {
+function defaultYFormat(v: TickValue): string {
+  if (v instanceof Date) return v.toLocaleDateString();
   return String(v);
 }

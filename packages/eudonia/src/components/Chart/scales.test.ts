@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { scaleBand, scaleLinear, scaleTime } from "@visx/scale";
 
-import { getX, type XScale } from "./scales";
+import { getX, type Scale } from "./scales";
 
-const band: XScale = {
+const band: Scale = {
   kind: "band",
   scale: scaleBand<string>({ domain: ["a", "b", "c"], range: [0, 300] }),
 };
 
-const time: XScale = {
+const time: Scale = {
   kind: "time",
   scale: scaleTime({
     domain: [new Date("2024-01-01"), new Date("2024-12-31")],
@@ -16,7 +16,7 @@ const time: XScale = {
   }),
 };
 
-const linear: XScale = {
+const linear: Scale = {
   kind: "linear",
   scale: scaleLinear<number>({ domain: [0, 100], range: [0, 300] }),
 };

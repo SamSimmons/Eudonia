@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { scaleBand, scaleLinear, scalePoint } from "@visx/scale";
 
 import { computeXTicks, computeYTicks } from "./computeTicks";
-import type { XScale, YScale } from "./scales";
+import type { Scale } from "./scales";
 
 const MONTHS = [
   "Jan",
@@ -19,21 +19,21 @@ const MONTHS = [
   "Dec",
 ] as const;
 
-function pointScale(width: number): XScale {
+function pointScale(width: number): Scale {
   return {
     kind: "point",
     scale: scalePoint<string>({ domain: [...MONTHS], range: [0, width] }),
   };
 }
 
-function bandScale(width: number): XScale {
+function bandScale(width: number): Scale {
   return {
     kind: "band",
     scale: scaleBand<string>({ domain: [...MONTHS], range: [0, width] }),
   };
 }
 
-function linearScale(width: number): XScale {
+function linearScale(width: number): Scale {
   return {
     kind: "linear",
     scale: scaleLinear<number>({ domain: [0, 100], range: [0, width] }),
@@ -108,9 +108,23 @@ describe("computeXTicks (continuous)", () => {
 });
 
 describe("computeYTicks", () => {
-  test("returns tick values covering the domain", () => {
-    const scale: YScale = scaleLinear<number>({ domain: [0, 100], range: [200, 0] });
+  test("returns tick values covering a linear domain", () => {
+    const scale: Scale = {
+      kind: "linear",
+      scale: scaleLinear<number>({ domain: [0, 100], range: [200, 0] }),
+    };
     const ticks = computeYTicks(scale, 200, "medium", undefined, identityFormat);
     expect(ticks.length).toBeGreaterThan(1);
+  });
+
+  test("handles band y for horizontal charts", () => {
+    const scale: Scale = {
+      kind: "band",
+      scale: scaleBand<string>({ domain: [...MONTHS], range: [0, 400] }),
+    };
+    const ticks = computeYTicks(scale, 400, "medium", undefined, identityFormat);
+    const labels = ticks.map((t) => t.label);
+    expect(labels).toContain("Jan");
+    expect(labels).toContain("Dec");
   });
 });

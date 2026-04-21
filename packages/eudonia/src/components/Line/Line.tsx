@@ -8,7 +8,7 @@ import {
   useXScale,
   useYScale,
 } from "../Chart/hooks";
-import { getX } from "../Chart/scales";
+import { getX, getY } from "../Chart/scales";
 import type { ChartDatum } from "../Chart/dataShape";
 
 type PathProps = Omit<
@@ -29,19 +29,16 @@ export function Line({
   className,
   ...props
 }: LineProps) {
-  useRegisterMark({ dataKey, xCategoricalPreference: "point" });
+  useRegisterMark({ dataKey, categoricalPreference: "point" });
   const data = useChartArrayData();
   const xKey = useResolvedXKey();
   const xScale = useXScale();
   const yScale = useYScale();
 
   const x = (d: ChartDatum) => getX(d[xKey], xScale);
-  const y = (d: ChartDatum) => {
-    const v = d[dataKey];
-    return typeof v === "number" ? yScale(v) : NaN;
-  };
+  const y = (d: ChartDatum) => getY(d[dataKey], yScale);
   const defined = (d: ChartDatum) =>
-    Number.isFinite(getX(d[xKey], xScale)) && typeof d[dataKey] === "number";
+    Number.isFinite(getX(d[xKey], xScale)) && Number.isFinite(getY(d[dataKey], yScale));
 
   return (
     <LinePath

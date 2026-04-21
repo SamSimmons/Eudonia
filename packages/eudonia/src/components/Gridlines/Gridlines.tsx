@@ -33,7 +33,7 @@ export function Gridlines({
     <g className={className}>
       {rows ? (
         <GridRows
-          scale={yScale}
+          scale={yScale.scale}
           width={innerWidth}
           stroke={stroke}
           strokeDasharray={strokeDasharray}
