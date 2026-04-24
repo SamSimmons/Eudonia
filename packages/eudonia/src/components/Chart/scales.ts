@@ -1,8 +1,14 @@
 import { scaleBand, scaleLinear, scalePoint, scaleTime } from "@visx/scale";
 import { extent } from "d3-array";
 
+import { clampFraction } from "@/utils/clampFraction";
+
 import type { ChartDatum } from "./dataShape";
-import type { CategoricalScalePreference } from "./state-types";
+import type {
+  BandPadding,
+  CategoricalScalePreference,
+  PaddingValue,
+} from "./state-types";
 
 export type BandScale = ReturnType<typeof scaleBand<string>>;
 export type PointScale = ReturnType<typeof scalePoint<string>>;
@@ -53,20 +59,117 @@ function project(value: unknown, scale: Scale): number {
   }
 }
 
+// d3's band scale keys its domain by string, so buildXScale/buildYScale run
+// every category value through String() when computing the domain. Renderers
+// and stack-baseline maps must do the same or they'll miss rows whose source
+// value is a number/Date (the scale has a slot for "2020", but the row's
+// `d[key]` is the number 2020). Returns null for null/undefined so callers can
+// skip rather than emitting a spurious "undefined" bucket.
+export function resolveCategoryKey(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  return typeof value === "string" ? value : String(value);
+}
+
+export const DEFAULT_BAND_PADDING_INNER_FRACTION = 0.1;
+export const DEFAULT_BAND_PADDING_OUTER_FRACTION = 0.05;
+
+// Splits a PaddingValue into its two contributions to d3's band-scale formula
+// `range = step * (n - innerFrac + 2*outerFrac)`. A fraction input is a
+// coefficient of step; a pixel input is a constant. Keeping them separate lets
+// `resolveBandPadding` solve for `step` when inputs mix the two forms.
+interface ParsedPadding {
+  fraction: number;
+  pixels: number;
+}
+
+function parsePadding(value: PaddingValue): ParsedPadding {
+  if (typeof value === "number") return { fraction: 0, pixels: value };
+  if (value.endsWith("%")) return { fraction: parseFloat(value) / 100, pixels: 0 };
+  // `${number}px` — parseFloat ignores the trailing "px" for us.
+  return { fraction: 0, pixels: parseFloat(value) };
+}
+
+// Resolves a (possibly mixed pixel/fraction) padding pair into the 0..1
+// fractions d3's scaleBand accepts. The band-scale identity is:
+//   step * (n - innerFrac + 2*outerFrac) = range
+// Each pixel input contributes a constant to the range side; each fractional
+// input is a coefficient of step. Solving for `step` gives us the equivalent
+// fraction for each pixel input. If the requested pixels don't fit, fractions
+// clamp to 1 and bars collapse — the user's pixel spec was too large.
+export function resolveBandPadding(
+  inner: PaddingValue | undefined,
+  outer: PaddingValue | undefined,
+  range: number,
+  n: number,
+): { paddingInner: number; paddingOuter: number } {
+  if (n <= 0 || range <= 0) return { paddingInner: 0, paddingOuter: 0 };
+  const i: ParsedPadding =
+    inner === undefined
+      ? { fraction: DEFAULT_BAND_PADDING_INNER_FRACTION, pixels: 0 }
+      : parsePadding(inner);
+  const o: ParsedPadding =
+    outer === undefined
+      ? { fraction: DEFAULT_BAND_PADDING_OUTER_FRACTION, pixels: 0 }
+      : parsePadding(outer);
+  const denom = n - i.fraction + 2 * o.fraction;
+  if (denom <= 0) return { paddingInner: 0, paddingOuter: 0 };
+  const step = (range + i.pixels - 2 * o.pixels) / denom;
+  if (step <= 0) return { paddingInner: 1, paddingOuter: 0 };
+  return {
+    paddingInner: clampFraction(i.fraction + i.pixels / step),
+    paddingOuter: clampFraction(o.fraction + o.pixels / step),
+  };
+}
+
+// Sub-band variant (outer is always 0 — no chart-edge gap for grouped bars).
+export function resolveSubBandPaddingInner(
+  inner: PaddingValue | undefined,
+  range: number,
+  n: number,
+  fallbackFraction: number,
+): number {
+  if (n <= 0 || range <= 0) return 0;
+  const i: ParsedPadding =
+    inner === undefined
+      ? { fraction: fallbackFraction, pixels: 0 }
+      : parsePadding(inner);
+  const denom = n - i.fraction;
+  if (denom <= 0) return 0;
+  const step = (range + i.pixels) / denom;
+  if (step <= 0) return 1;
+  return clampFraction(i.fraction + i.pixels / step);
+}
+
 export function buildXScale(
   data: readonly ChartDatum[],
   xKey: string,
   type: ScaleKind,
   width: number,
+  bandPadding: BandPadding | undefined,
+  // Horizontal-orientation inputs — only consulted when type is linear and
+  // xValueKeys is non-empty. In that mode x is the value axis (like y is on a
+  // vertical chart) and we aggregate across multiple dataKeys with stack
+  // awareness. Vertical charts pass undefined / empty and fall back to the
+  // single-xKey path below.
+  xValueKeys: readonly string[] | undefined,
+  includeZero: boolean,
+  stackGroups: ReadonlyMap<string, readonly string[]> | undefined,
 ): Scale {
   if (type === "band") {
+    const domain = data.map((d) => String(d[xKey]));
+    const { paddingInner, paddingOuter } = resolveBandPadding(
+      bandPadding?.inner,
+      bandPadding?.outer,
+      width,
+      domain.length,
+    );
     return {
       kind: "band",
       scale: scaleBand<string>({
-        domain: data.map((d) => String(d[xKey])),
+        domain,
         range: [0, width],
-        paddingInner: 0.1,
-        paddingOuter: 0.05,
+        paddingInner,
+        paddingOuter,
       }),
     };
   }
@@ -91,6 +194,13 @@ export function buildXScale(
         domain: [new Date(min ?? 0), new Date(max ?? 0)],
         range: [0, width],
       }),
+    };
+  }
+  if (xValueKeys && xValueKeys.length > 0) {
+    const domain = aggregateValueDomain(data, xValueKeys, stackGroups, includeZero);
+    return {
+      kind: "linear",
+      scale: scaleLinear<number>({ domain, range: [0, width] }),
     };
   }
   const [min, max] = extent(data, (d) => {
@@ -118,15 +228,24 @@ export function buildYScale(
   yDomain: readonly [number, number] | undefined,
   height: number,
   includeZero: boolean,
+  bandPadding: BandPadding | undefined,
+  stackGroups: ReadonlyMap<string, readonly string[]> | undefined,
 ): Scale {
   if (yType === "band") {
+    const domain = data.map((d) => String(d[yKey]));
+    const { paddingInner, paddingOuter } = resolveBandPadding(
+      bandPadding?.inner,
+      bandPadding?.outer,
+      height,
+      domain.length,
+    );
     return {
       kind: "band",
       scale: scaleBand<string>({
-        domain: data.map((d) => String(d[yKey])),
+        domain,
         range: [0, height],
-        paddingInner: 0.1,
-        paddingOuter: 0.05,
+        paddingInner,
+        paddingOuter,
       }),
     };
   }
@@ -153,39 +272,68 @@ export function buildYScale(
       }),
     };
   }
-  let domain: [number, number];
-  if (yDomain) {
-    domain = [yDomain[0], yDomain[1]];
-  } else {
-    let min = Infinity;
-    let max = -Infinity;
-    for (const row of data) {
-      for (const k of yKeys) {
-        const v = row[k];
-        if (typeof v === "number") {
-          if (v < min) min = v;
-          if (v > max) max = v;
-        }
-      }
-    }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      domain = [0, 1];
-    } else if (min === max) {
-      // Flat series: a zero-width domain makes scaleLinear return NaN for every
-      // input, so the line vanishes. Pad symmetrically (5% of the value, or 1
-      // when the value is 0) so the line renders centered vertically.
-      const offset = min === 0 ? 1 : Math.abs(min) * 0.05;
-      domain = [min - offset, max + offset];
-      if (includeZero) domain = [Math.min(domain[0], 0), Math.max(domain[1], 0)];
-    } else {
-      domain = [min, max];
-      if (includeZero) domain = [Math.min(domain[0], 0), Math.max(domain[1], 0)];
-    }
-  }
+  const domain: [number, number] = yDomain
+    ? [yDomain[0], yDomain[1]]
+    : aggregateValueDomain(data, yKeys, stackGroups, includeZero);
   return {
     kind: "linear",
     scale: scaleLinear<number>({ domain, range: [height, 0] }),
   };
+}
+
+// Computes a linear-axis domain from a set of value keys. Keys that appear in
+// a stack contribute per-row positive/negative totals (d3 stacking: positives
+// accumulate up, negatives down); unstacked keys contribute their raw values.
+// Flat series and empty data are padded so scaleLinear doesn't collapse to a
+// zero-width domain (every input would map to NaN).
+export function aggregateValueDomain(
+  data: readonly ChartDatum[],
+  keys: readonly string[],
+  stackGroups: ReadonlyMap<string, readonly string[]> | undefined,
+  includeZero: boolean,
+): [number, number] {
+  const stackedKeys = new Set<string>();
+  if (stackGroups) {
+    for (const ks of stackGroups.values()) for (const k of ks) stackedKeys.add(k);
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  for (const row of data) {
+    for (const k of keys) {
+      if (stackedKeys.has(k)) continue;
+      const v = row[k];
+      if (typeof v === "number") {
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+    }
+    if (stackGroups) {
+      for (const ks of stackGroups.values()) {
+        let pos = 0;
+        let neg = 0;
+        for (const k of ks) {
+          const v = row[k];
+          if (typeof v !== "number") continue;
+          if (v >= 0) pos += v;
+          else neg += v;
+        }
+        if (pos > max) max = pos;
+        if (neg < min) min = neg;
+      }
+    }
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return [0, 1];
+  }
+  if (min === max) {
+    const offset = min === 0 ? 1 : Math.abs(min) * 0.05;
+    let domain: [number, number] = [min - offset, max + offset];
+    if (includeZero) domain = [Math.min(domain[0], 0), Math.max(domain[1], 0)];
+    return domain;
+  }
+  let domain: [number, number] = [min, max];
+  if (includeZero) domain = [Math.min(domain[0], 0), Math.max(domain[1], 0)];
+  return domain;
 }
 
 // Scale-config inference — picks xKey / yKeys / xType from the dataset when

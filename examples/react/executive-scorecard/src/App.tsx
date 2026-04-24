@@ -1,11 +1,19 @@
 import { Grid, GridItem, Screen } from "eudonia/layout";
 import {
+  Bar,
+  BarChart,
+  BarOverlay,
+  BarTick,
+  Chart,
   ChartCard,
+  Gridlines,
   LineChart,
   ReferenceLine,
   Sparkline,
   StatCard,
   TreemapChart,
+  XAxis,
+  YAxis,
   type TreemapNode,
 } from "eudonia/components";
 
@@ -73,6 +81,35 @@ const GROSS_MARGIN_BY_MONTH = GROSS_MARGIN_BARS.map((gmPct, i) => ({
   gmPct,
 }));
 
+const GROSS_MARGIN_BY_BU = GROSS_MARGIN_BARS.map((actual, i) => ({
+  bu: MONTHS[i],
+  actual,
+  scenario: Math.max(actual - 8 + (i % 3) * 4, 12),
+}));
+
+const REVENUE_BY_MONTH_SCENARIO = REVENUE_BARS.map(([actual, scenario], i) => ({
+  month: MONTHS[i],
+  actual,
+  scenario,
+}));
+
+// Target vs Actual: three stacked segments (low / mid / high) form a tiered
+// range background; `actual` overlays on top; `target` is drawn as a tick.
+const TARGET_VS_ACTUAL = TARGETS.map((t) => {
+  const lowBound = Math.round(t.budget * 0.6);
+  const midBound = Math.round(t.budget * 0.9);
+  const highBound = Math.round(t.budget * 1.1);
+  return {
+    label: t.label,
+    low: lowBound,
+    mid: midBound - lowBound,
+    high: highBound - midBound,
+    actual: t.actual,
+    target: t.budget,
+    value: t.value,
+  };
+});
+
 const REVENUE_BY_REGION: TreemapNode = {
   name: "Regions",
   children: [
@@ -130,44 +167,32 @@ export default function App() {
           </ChartCard>
         </GridItem>
 
-        <GridItem className="tile tile--chart" column={2} row={2} rowSpan={2}>
-          <h2 className="tile-title">Gross Margin %</h2>
-          <div className="tile-subtitle">by Business Unit, Scenario</div>
-          <div className="bar-chart">
-            {["60%", "50%", "40%", "30%", "20%", "10%", "0%"].map((tick) => (
-              <span className="chart-axis-label" key={tick}>
-                {tick}
-              </span>
-            ))}
-            <div className="bar-chart-bars" aria-hidden="true">
-              {GROSS_MARGIN_BARS.map((height, index) => (
-                <div className="bar-pair" key={MONTHS[index]}>
-                  <span className="bar bar--teal" style={{ height: `${height}%` }} />
-                  <span className="bar bar--slate" style={{ height: `${Math.max(height - 8 + (index % 3) * 4, 12)}%` }} />
-                </div>
-              ))}
-            </div>
-          </div>
+        <GridItem column={2} row={2} rowSpan={2}>
+          <ChartCard title="Gross Margin %" subtitle="by Business Unit, Scenario">
+            <BarChart
+              data={GROSS_MARGIN_BY_BU}
+              dataKey={["actual", "scenario"]}
+              xKey="bu"
+              margin={{ top: 8, right: 8, bottom: 20, left: 35 }}
+              yAxis={{ preferredTickCount: 5, tickFormat: (v) => `${v}%` }}
+              barGroupPadding="1px"
+              bandPadding={{ outer: "10px", inner: "10px" }}
+            />
+          </ChartCard>
         </GridItem>
 
-        <GridItem className="tile tile--chart" column={2} row={4} rowSpan={2}>
-          <h2 className="tile-title">Total Revenue</h2>
-          <div className="tile-subtitle">by Month, Scenario</div>
-          <div className="revenue-chart">
-            <div className="revenue-bars" aria-hidden="true">
-              {REVENUE_BARS.map(([actual, budget], index) => (
-                <div className="bar-pair bar-pair--wide" key={MONTHS[index]}>
-                  <span className="bar bar--teal" style={{ height: `${actual}%` }} />
-                  <span className="bar bar--slate" style={{ height: `${budget}%` }} />
-                </div>
-              ))}
-            </div>
-            <div className="month-axis">
-              {MONTHS.map((month) => (
-                <span key={month}>{month}</span>
-              ))}
-            </div>
-          </div>
+        <GridItem column={2} row={4} rowSpan={2}>
+          <ChartCard title="Total Revenue" subtitle="by Month, Scenario">
+            <BarChart
+              data={REVENUE_BY_MONTH_SCENARIO}
+              dataKey={["actual", "scenario"]}
+              xKey="month"
+              margin={{ top: 8, right: 8, bottom: 20, left: 35 }}
+              yAxis={{ preferredTickCount: 5 }}
+              barGroupPadding="1px"
+              bandPadding={{ outer: "10px", inner: "10px" }}
+            />
+          </ChartCard>
         </GridItem>
 
         <GridItem className="tile" column={2} row={6} rowSpan={2}>
@@ -231,35 +256,35 @@ export default function App() {
           </table>
         </GridItem>
 
-        <GridItem className="tile" column={3} columnSpan={2} row={2} rowSpan={2}>
-          <h2 className="tile-title">Target vs Actual</h2>
-          <div className="tile-subtitle">by Executive</div>
-          <div className="target-list">
-            {TARGETS.map((target) => (
-              <div className="target-row" key={target.label}>
-                <span className="target-label">{target.label}</span>
-                <div className="target-bars" aria-hidden="true">
-                  <span className="target-bar target-bar--actual" style={{ width: `${target.actual}%` }} />
-                  <span className="target-bar target-bar--budget" style={{ width: `${target.budget}%` }} />
-                </div>
-                <span className="target-value">{target.value}</span>
-              </div>
-            ))}
-          </div>
-          <div className="target-legend">
-            <span className="legend-item">
-              <span className="legend-swatch legend-swatch--budget" />
-              LY
-            </span>
-            <span className="legend-item">
-              <span className="legend-swatch legend-swatch--actual" />
-              Actual
-            </span>
-            <span className="legend-item">
-              <span className="legend-swatch legend-swatch--budget" />
-              Target
-            </span>
-          </div>
+        <GridItem column={3} columnSpan={2} row={2} rowSpan={2}>
+          <ChartCard title="Target vs Actual" subtitle="by Executive">
+            <Chart
+              data={TARGET_VS_ACTUAL}
+              yKey="label"
+              yType="band"
+              xType="linear"
+              margin={{ top: 8, right: 24, bottom: 20, left: 100 }}
+              bandPadding={{ inner: "25%", outer: "10%" }}
+            >
+              <Gridlines />
+              <Bar dataKey="low" stackId="range" fill="oklch(0.7 0.17 25)" />
+              <Bar dataKey="mid" stackId="range" fill="oklch(0.82 0.14 90)" />
+              <Bar dataKey="high" stackId="range" fill="oklch(0.72 0.16 150)" />
+              <BarOverlay
+                dataKey="actual"
+                size={0.35}
+                fill="oklch(0.4 0.14 250)"
+              />
+              <BarTick
+                dataKey="target"
+                size={1}
+                stroke="oklch(0.6 0.2 25)"
+                strokeWidth={3}
+              />
+              <XAxis />
+              <YAxis />
+            </Chart>
+          </ChartCard>
         </GridItem>
 
         {MANAGERS.map((manager, index) => (

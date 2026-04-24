@@ -2,10 +2,9 @@ import type { CSSProperties } from "react";
 import type { HierarchyRectangularNode } from "d3-hierarchy";
 
 import { Chart, type ChartProps } from "../Chart/Chart";
+import { DEFAULT_PALETTE } from "../Chart/palette";
 import { Treemap, type TreemapProps } from "../Treemap/Treemap";
 import type { TreemapNode, TreemapNodeBase } from "../Treemap/types";
-
-const PALETTE_SIZE = 8;
 
 export interface TreemapChartProps<T extends TreemapNodeBase = TreemapNodeBase> {
   data: TreemapNode<T>;
@@ -91,20 +90,3 @@ function paletteIndex<T extends TreemapNodeBase>(
   return parent.children.indexOf(topLevel);
 }
 
-// Fallback OKLCH palette used when `eudonia/theme.css` is not loaded. CSS
-// variables override these when the theme is imported.
-const FALLBACK_PALETTE: readonly string[] = [
-  "oklch(0.62 0.14 235)",
-  "oklch(0.65 0.15 155)",
-  "oklch(0.68 0.15 75)",
-  "oklch(0.6 0.17 25)",
-  "oklch(0.55 0.17 300)",
-  "oklch(0.6 0.13 200)",
-  "oklch(0.7 0.12 100)",
-  "oklch(0.55 0.15 340)",
-];
-
-const DEFAULT_PALETTE: readonly string[] = Array.from(
-  { length: PALETTE_SIZE },
-  (_, i) => `var(--eudonia-chart-cat-${i + 1}, ${FALLBACK_PALETTE[i]})`,
-);

@@ -18,6 +18,8 @@ import {
   type ChartData,
   type ChartDatum,
 } from "./dataShape";
+import { scaleBand } from "@visx/scale";
+
 import {
   buildXScale,
   buildYScale,
@@ -25,13 +27,19 @@ import {
   inferXType,
   inferYKey,
   inferYKeys,
+  resolveCategoryKey,
+  resolveSubBandPaddingInner,
+  type Scale,
   type TickValue,
 } from "./scales";
 import type {
+  BarLayout,
+  BarRegistration,
   CategoricalScalePreference,
   ChartStateDerived,
   ChartStateInputs,
   MarkRegistration,
+  PaddingValue,
   XAxisConfig,
   YAxisConfig,
 } from "./state-types";
@@ -50,9 +58,14 @@ export const Y_AXIS_DEFAULTS: YAxisConfig = {
   tickFormat: undefined,
 };
 
+export const DEFAULT_BAR_GROUP_PADDING = 0.1;
+
 const EMPTY_ARRAY: readonly ChartDatum[] = [];
 const EMPTY_TREEMAP_LAYOUTS: ReadonlyMap<string, HierarchyRectangularNode<TreemapNode>> =
   new Map();
+const EMPTY_BAR_LAYOUTS: ReadonlyMap<string, BarLayout> = new Map();
+const EMPTY_BASE_VALUES: ReadonlyMap<string, number> = new Map();
+const EMPTY_STACK_GROUPS: ReadonlyMap<string, readonly string[]> = new Map();
 
 function arrayData(data: ChartData): readonly ChartDatum[] {
   return isHierarchical(data) ? EMPTY_ARRAY : data;
@@ -124,16 +137,39 @@ export function derive(
   const innerWidth = Math.max(0, next.width - next.margin.left - next.margin.right);
   const innerHeight = Math.max(0, next.height - next.margin.top - next.margin.bottom);
 
+  const includeZero = resolveIncludeZero(next.markRegistrations);
+
+  const stackGroups =
+    prev && prev.barRegistrations === next.barRegistrations
+      ? prev.stackGroups
+      : resolveBarStacks(next.barRegistrations);
+
+  // Horizontal orientation (yType=band) puts values on x — aggregate across
+  // resolvedYKeys with stack awareness, same way buildYScale does for vertical.
+  const xValueKeys = resolvedYType === "band" ? resolvedYKeys : undefined;
+
   const xScale =
     prev &&
     prev.data === next.data &&
     prev.resolvedXKey === resolvedXKey &&
     prev.resolvedXType === resolvedXType &&
-    prev.innerWidth === innerWidth
+    prev.innerWidth === innerWidth &&
+    prev.bandPadding === next.bandPadding &&
+    prev.resolvedYType === resolvedYType &&
+    prev.resolvedYKeys === resolvedYKeys &&
+    prev.stackGroups === stackGroups &&
+    prev.markRegistrations === next.markRegistrations
       ? prev.xScale
-      : buildXScale(flat, resolvedXKey, resolvedXType, innerWidth);
-
-  const includeZeroInY = resolveIncludeZero(next.markRegistrations);
+      : buildXScale(
+          flat,
+          resolvedXKey,
+          resolvedXType,
+          innerWidth,
+          next.bandPadding,
+          xValueKeys,
+          includeZero,
+          stackGroups,
+        );
 
   const yScale =
     prev &&
@@ -143,7 +179,9 @@ export function derive(
     prev.resolvedYKeys === resolvedYKeys &&
     prev.yDomain === next.yDomain &&
     prev.innerHeight === innerHeight &&
-    prev.markRegistrations === next.markRegistrations
+    prev.markRegistrations === next.markRegistrations &&
+    prev.bandPadding === next.bandPadding &&
+    prev.stackGroups === stackGroups
       ? prev.yScale
       : buildYScale(
           flat,
@@ -152,7 +190,9 @@ export function derive(
           resolvedYType,
           next.yDomain,
           innerHeight,
-          includeZeroInY,
+          includeZero,
+          next.bandPadding,
+          stackGroups,
         );
 
   const xTicks =
@@ -187,6 +227,32 @@ export function derive(
 
   const treemapLayouts = deriveTreemapLayouts(prev, next, innerWidth, innerHeight);
 
+  const barLayouts =
+    prev &&
+    prev.barRegistrations === next.barRegistrations &&
+    prev.data === next.data &&
+    prev.xScale === xScale &&
+    prev.yScale === yScale &&
+    prev.resolvedXType === resolvedXType &&
+    prev.resolvedYType === resolvedYType &&
+    prev.resolvedXKey === resolvedXKey &&
+    prev.resolvedYKey === resolvedYKey &&
+    prev.barGroupPadding === next.barGroupPadding &&
+    prev.stackGroups === stackGroups
+      ? prev.barLayouts
+      : deriveBarLayouts(
+          next.barRegistrations,
+          xScale,
+          yScale,
+          resolvedXType,
+          resolvedYType,
+          next.barGroupPadding,
+          flat,
+          resolvedXKey,
+          resolvedYKey,
+          stackGroups,
+        );
+
   return {
     resolvedXKey,
     resolvedXType,
@@ -202,7 +268,146 @@ export function derive(
     xTicks,
     yTicks,
     treemapLayouts,
+    barLayouts,
+    stackGroups,
   };
+}
+
+// Sub-band scale across the categorical axis's bandwidth. Each registration
+// claims a slot keyed by `stackId ?? dataKey` — bars sharing a stackId collapse
+// into one slot (stacks) and bars without a stackId each get their own (groups).
+// If neither axis is band, bars can't render; return an empty map.
+function deriveBarLayouts(
+  regs: ReadonlyMap<string, BarRegistration>,
+  xScale: Scale,
+  yScale: Scale,
+  xType: string,
+  yType: string,
+  groupPadding: PaddingValue | undefined,
+  data: readonly ChartDatum[],
+  xKey: string,
+  yKey: string,
+  stackGroups: ReadonlyMap<string, readonly string[]>,
+): ReadonlyMap<string, BarLayout> {
+  if (regs.size === 0) return EMPTY_BAR_LAYOUTS;
+
+  const categoricalScale =
+    xType === "band" ? xScale : yType === "band" ? yScale : null;
+  if (!categoricalScale || categoricalScale.kind !== "band") return EMPTY_BAR_LAYOUTS;
+
+  // Group keys in registration order so authors control slot order.
+  const groupKeys: string[] = [];
+  const slotOfGroup = new Map<string, number>();
+  const groupOfReg = new Map<string, string>();
+  for (const [id, reg] of regs) {
+    const key = reg.stackId ?? reg.dataKey;
+    groupOfReg.set(id, key);
+    if (!slotOfGroup.has(key)) {
+      slotOfGroup.set(key, groupKeys.length);
+      groupKeys.push(key);
+    }
+  }
+
+  const bandwidth = categoricalScale.scale.bandwidth();
+  const paddingInner = resolveSubBandPaddingInner(
+    groupPadding,
+    bandwidth,
+    groupKeys.length,
+    DEFAULT_BAR_GROUP_PADDING,
+  );
+  const subBand = scaleBand<string>({
+    domain: groupKeys,
+    range: [0, bandwidth],
+    paddingInner,
+    paddingOuter: 0,
+  });
+
+  const baseValuesByReg = computeStackBaseValues(regs, stackGroups, data, xType === "band" ? xKey : yKey);
+
+  const out = new Map<string, BarLayout>();
+  for (const [id, groupKey] of groupOfReg) {
+    out.set(id, {
+      offset: subBand(groupKey) ?? 0,
+      bandwidth: subBand.bandwidth(),
+      slot: slotOfGroup.get(groupKey) ?? 0,
+      baseValues: baseValuesByReg.get(id) ?? EMPTY_BASE_VALUES,
+    });
+  }
+  return out;
+}
+
+// Stacking math: for each row, walk each stack's members in registration order
+// and track separate positive/negative accumulators (d3 convention — positive
+// values stack upward from 0, negatives downward). A segment's base at that
+// row's category is the accumulator's current value BEFORE the segment's own
+// value is added. Bars without a stackId (or whose value is missing) don't
+// get an entry — the Bar renderer falls back to 0.
+function computeStackBaseValues(
+  regs: ReadonlyMap<string, BarRegistration>,
+  stackGroups: ReadonlyMap<string, readonly string[]>,
+  data: readonly ChartDatum[],
+  categoryKey: string,
+): Map<string, Map<string, number>> {
+  const out = new Map<string, Map<string, number>>();
+  if (stackGroups.size === 0) return out;
+
+  // For each stack, resolve the list of registration ids in the same order as
+  // the dataKeys the stackGroups map records. A stack's dataKey list is built
+  // from barRegistrations in iteration order, so we re-walk the same iteration
+  // and pick out the ids that belong to the stack.
+  const idsByStack = new Map<string, string[]>();
+  for (const [id, reg] of regs) {
+    if (reg.stackId === undefined) continue;
+    let list = idsByStack.get(reg.stackId);
+    if (!list) {
+      list = [];
+      idsByStack.set(reg.stackId, list);
+    }
+    list.push(id);
+    out.set(id, new Map());
+  }
+
+  for (const row of data) {
+    const cat = resolveCategoryKey(row[categoryKey]);
+    if (cat === null) continue;
+    for (const [stackId, keys] of stackGroups) {
+      const ids = idsByStack.get(stackId);
+      if (!ids) continue;
+      let pos = 0;
+      let neg = 0;
+      for (let i = 0; i < keys.length; i++) {
+        const v = row[keys[i]!];
+        if (typeof v !== "number" || !Number.isFinite(v)) continue;
+        const base = v >= 0 ? pos : neg;
+        out.get(ids[i]!)!.set(cat, base);
+        if (v >= 0) pos += v;
+        else neg += v;
+      }
+    }
+  }
+  return out;
+}
+
+// Builds the per-stackId list of dataKeys in barRegistrations iteration order.
+// Consumed by buildYScale (to aggregate stack-total domain) and by
+// computeStackBaseValues (to walk each stack's members per row).
+function resolveBarStacks(
+  regs: ReadonlyMap<string, BarRegistration>,
+): ReadonlyMap<string, readonly string[]> {
+  if (regs.size === 0) return EMPTY_STACK_GROUPS;
+  let any = false;
+  const out = new Map<string, string[]>();
+  for (const reg of regs.values()) {
+    if (reg.stackId === undefined) continue;
+    any = true;
+    let list = out.get(reg.stackId);
+    if (!list) {
+      list = [];
+      out.set(reg.stackId, list);
+    }
+    list.push(reg.dataKey);
+  }
+  return any ? out : EMPTY_STACK_GROUPS;
 }
 
 function deriveTreemapLayouts(

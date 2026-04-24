@@ -1,6 +1,8 @@
 import type { TreemapConfig } from "../Treemap/types";
 
 import type {
+  BandPadding,
+  BarRegistration,
   ChartMargin,
   MarkRegistration,
   XAxisConfig,
@@ -22,6 +24,15 @@ export function sameStringList(
   return true;
 }
 
+export function shallowEqualBandPadding(
+  a: BandPadding | undefined,
+  b: BandPadding | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.inner === b.inner && a.outer === b.outer;
+}
+
 export function shallowEqualYDomain(
   a: readonly [number, number] | undefined,
   b: readonly [number, number] | undefined,
@@ -35,6 +46,10 @@ export function shallowEqualMark(a: MarkRegistration, b: MarkRegistration): bool
   if (a.categoricalPreference !== b.categoricalPreference) return false;
   if (a.includeZero !== b.includeZero) return false;
   return sameDataKey(a.dataKey, b.dataKey);
+}
+
+export function shallowEqualBar(a: BarRegistration, b: BarRegistration): boolean {
+  return a.dataKey === b.dataKey && a.stackId === b.stackId;
 }
 
 function sameDataKey(

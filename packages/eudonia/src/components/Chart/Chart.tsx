@@ -12,7 +12,7 @@ import styles from "./Chart.module.css";
 import { ChartSurface } from "./ChartSurface";
 import type { ChartData } from "./dataShape";
 import type { ScaleKind } from "./scales";
-import type { ChartMargin } from "./state-types";
+import type { BandPadding, ChartMargin, PaddingValue } from "./state-types";
 import { ChartStoreContext, createChartStore } from "./store";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
@@ -25,6 +25,16 @@ export interface ChartProps extends Omit<DivProps, "children"> {
   yDomain?: readonly [number, number];
   xType?: ScaleKind;
   yType?: ScaleKind;
+  // Paddings on whichever axis is `band`. `inner` is the gap between
+  // categories; `outer` is the gap at each end of the range. Accepts a
+  // percentage of the band step (`"10%"`) or pixels (raw number or `"8px"`).
+  // Defaults: inner 10% of step, outer 5% of step. Ignored when neither axis
+  // is band.
+  bandPadding?: BandPadding;
+  // Padding between grouped bars within a single category (sub-band inner
+  // padding). Accepts a percentage or pixels (same shape as `bandPadding`).
+  // Default 10% of the sub-band step. No effect on stacks or non-bar marks.
+  barGroupPadding?: PaddingValue;
   margin?: Partial<ChartMargin>;
   width?: number;
   height?: number;
@@ -41,6 +51,8 @@ export function Chart({
   yDomain,
   xType,
   yType,
+  bandPadding,
+  barGroupPadding,
   margin,
   width,
   height,
@@ -65,6 +77,8 @@ export function Chart({
       yType,
       yKeys,
       yDomain,
+      bandPadding,
+      barGroupPadding,
       margin: resolvedMargin,
       width: width ?? 0,
       height: height ?? 0,
@@ -80,8 +94,17 @@ export function Chart({
   }, [store, resolvedMargin]);
 
   useIsomorphicLayoutEffect(() => {
-    store.getState().setAuthoredConfig({ xKey, xType, yKey, yType, yKeys, yDomain });
-  }, [store, xKey, xType, yKey, yType, yKeys, yDomain]);
+    store.getState().setAuthoredConfig({
+      xKey,
+      xType,
+      yKey,
+      yType,
+      yKeys,
+      yDomain,
+      bandPadding,
+      barGroupPadding,
+    });
+  }, [store, xKey, xType, yKey, yType, yKeys, yDomain, bandPadding, barGroupPadding]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 

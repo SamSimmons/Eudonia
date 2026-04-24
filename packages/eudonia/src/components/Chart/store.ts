@@ -7,6 +7,8 @@ import type { ChartData } from "./dataShape";
 import { derive } from "./derive";
 import {
   sameStringList,
+  shallowEqualBandPadding,
+  shallowEqualBar,
   shallowEqualMargin,
   shallowEqualMark,
   shallowEqualTreemapConfig,
@@ -16,10 +18,13 @@ import {
 } from "./equality";
 import type { ScaleKind } from "./scales";
 import type {
+  BandPadding,
+  BarRegistration,
   ChartMargin,
   ChartStateDerived,
   ChartStateInputs,
   MarkRegistration,
+  PaddingValue,
   XAxisConfig,
   YAxisConfig,
 } from "./state-types";
@@ -35,9 +40,13 @@ interface ChartStateActions {
     yType?: ScaleKind;
     yKeys?: readonly string[];
     yDomain?: readonly [number, number];
+    bandPadding?: BandPadding;
+    barGroupPadding?: PaddingValue;
   }) => void;
   registerMark: (id: string, reg: MarkRegistration) => void;
   unregisterMark: (id: string) => void;
+  registerBar: (id: string, reg: BarRegistration) => void;
+  unregisterBar: (id: string) => void;
   registerXAxis: (id: string, cfg: XAxisConfig) => void;
   unregisterXAxis: (id: string) => void;
   registerYAxis: (id: string, cfg: YAxisConfig) => void;
@@ -57,6 +66,8 @@ export interface CreateChartStoreInit {
   yType?: ScaleKind;
   yKeys?: readonly string[];
   yDomain?: readonly [number, number];
+  bandPadding?: BandPadding;
+  barGroupPadding?: PaddingValue;
   margin: ChartMargin;
   width: number;
   height: number;
@@ -72,10 +83,13 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
       authoredYType: init.yType,
       authoredYKeys: init.yKeys,
       yDomain: init.yDomain,
+      bandPadding: init.bandPadding,
+      barGroupPadding: init.barGroupPadding,
       margin: init.margin,
       width: init.width,
       height: init.height,
       markRegistrations: new Map(),
+      barRegistrations: new Map(),
       xAxisRegistrations: new Map(),
       yAxisRegistrations: new Map(),
       treemapRegistrations: new Map(),
@@ -103,7 +117,16 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           const next = { ...prev, width, height };
           return { ...next, ...derive(prev, next) };
         }),
-      setAuthoredConfig: ({ xKey, xType, yKey, yType, yKeys, yDomain }) =>
+      setAuthoredConfig: ({
+        xKey,
+        xType,
+        yKey,
+        yType,
+        yKeys,
+        yDomain,
+        bandPadding,
+        barGroupPadding,
+      }) =>
         set((prev) => {
           // Preserve old reference identity when values are equal so derive()
           // sees an unchanged input and skips downstream recomputes.
@@ -113,13 +136,18 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           const nextYDomain = shallowEqualYDomain(prev.yDomain, yDomain)
             ? prev.yDomain
             : yDomain;
+          const nextBandPadding = shallowEqualBandPadding(prev.bandPadding, bandPadding)
+            ? prev.bandPadding
+            : bandPadding;
           if (
             prev.authoredXKey === xKey &&
             prev.authoredXType === xType &&
             prev.authoredYKey === yKey &&
             prev.authoredYType === yType &&
             prev.authoredYKeys === nextYKeys &&
-            prev.yDomain === nextYDomain
+            prev.yDomain === nextYDomain &&
+            prev.bandPadding === nextBandPadding &&
+            prev.barGroupPadding === barGroupPadding
           ) {
             return prev;
           }
@@ -131,6 +159,8 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
             authoredYType: yType,
             authoredYKeys: nextYKeys,
             yDomain: nextYDomain,
+            bandPadding: nextBandPadding,
+            barGroupPadding,
           };
           return { ...next, ...derive(prev, next) };
         }),
@@ -149,6 +179,23 @@ export function createChartStore(init: CreateChartStoreInit): ChartStore {
           const markRegistrations = new Map(prev.markRegistrations);
           markRegistrations.delete(id);
           const next = { ...prev, markRegistrations };
+          return { ...next, ...derive(prev, next) };
+        }),
+      registerBar: (id, reg) =>
+        set((prev) => {
+          const existing = prev.barRegistrations.get(id);
+          if (existing && shallowEqualBar(existing, reg)) return prev;
+          const barRegistrations = new Map(prev.barRegistrations);
+          barRegistrations.set(id, reg);
+          const next = { ...prev, barRegistrations };
+          return { ...next, ...derive(prev, next) };
+        }),
+      unregisterBar: (id) =>
+        set((prev) => {
+          if (!prev.barRegistrations.has(id)) return prev;
+          const barRegistrations = new Map(prev.barRegistrations);
+          barRegistrations.delete(id);
+          const next = { ...prev, barRegistrations };
           return { ...next, ...derive(prev, next) };
         }),
       registerXAxis: (id, cfg) =>

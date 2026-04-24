@@ -15,6 +15,7 @@ import type {
 import type { Tick } from "./computeTicks";
 import { isHierarchical, type ChartDatum } from "./dataShape";
 import {
+  shallowEqualBar,
   shallowEqualMark,
   shallowEqualTreemapConfig,
   shallowEqualXAxisConfig,
@@ -22,6 +23,8 @@ import {
 } from "./equality";
 import type { Scale, TickValue } from "./scales";
 import type {
+  BarLayout,
+  BarRegistration,
   ChartMargin,
   MarkRegistration,
   XAxisConfig,
@@ -138,6 +141,28 @@ export function useRegisterMark(reg: MarkRegistration): void {
       store.getState().unregisterMark(id);
     };
   }, [store, id, stable]);
+}
+
+// Returns the stable registration id so the caller can pass it to useBarLayout.
+// Bars need both ends of the same id — registration writes to the store and
+// the layout hook reads the derived rect keyed by that id.
+export function useRegisterBar(reg: BarRegistration): string {
+  const store = useChartStore();
+  const id = useId();
+  const stable = useStable(reg, shallowEqualBar);
+
+  useIsomorphicLayoutEffect(() => {
+    store.getState().registerBar(id, stable);
+    return () => {
+      store.getState().unregisterBar(id);
+    };
+  }, [store, id, stable]);
+
+  return id;
+}
+
+export function useBarLayout(id: string): BarLayout | null {
+  return useStore(useChartStore(), (s) => s.barLayouts.get(id) ?? null);
 }
 
 export function useRegisterXAxis(cfg: XAxisConfig): void {

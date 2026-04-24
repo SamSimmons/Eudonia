@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { cleanup, renderHook } from "@testing-library/react";
 
 import { Chart, type ChartProps } from "./Chart";
-import { useResolvedXKey, useXScale, useYScale } from "./hooks";
+import { useBarLayout, useRegisterBar, useResolvedXKey, useXScale, useYScale } from "./hooks";
 import type { Scale } from "./scales";
 
 afterEach(() => {
@@ -169,6 +169,365 @@ describe("Chart", () => {
       xType: "linear",
     });
     expect(linearYDomain(ctx)).toEqual([0, 100]);
+  });
+
+  test("bar layouts: grouped bars split the band into sub-slots in registration order", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[
+          { cat: "a", actual: 10, plan: 12 },
+          { cat: "b", actual: 20, plan: 18 },
+        ]}
+        xType="band"
+        xKey="cat"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        const actualId = useRegisterBar({ dataKey: "actual" });
+        const planId = useRegisterBar({ dataKey: "plan" });
+        return {
+          actual: useBarLayout(actualId),
+          plan: useBarLayout(planId),
+          xScale: useXScale(),
+        };
+      },
+      { wrapper },
+    );
+    const { actual, plan, xScale } = result.current;
+    expect(actual).not.toBeNull();
+    expect(plan).not.toBeNull();
+    if (!actual || !plan) throw new Error("expected layouts");
+    if (xScale.kind !== "band") throw new Error("expected band x scale");
+    expect(actual.offset).toBeLessThan(plan.offset);
+    expect(actual.bandwidth).toBeCloseTo(plan.bandwidth, 5);
+    expect(actual.bandwidth).toBeLessThan(xScale.scale.bandwidth());
+    expect(actual.slot).toBe(0);
+    expect(plan.slot).toBe(1);
+  });
+
+  test("barGroupPadding widens bars by reducing the sub-band gap", () => {
+    function measure(groupPadding: number | undefined) {
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <Chart
+          width={400}
+          height={200}
+          data={[{ cat: "a", actual: 1, plan: 2 }]}
+          xType="band"
+          xKey="cat"
+          barGroupPadding={groupPadding}
+        >
+          {children}
+        </Chart>
+      );
+      const { result } = renderHook(
+        () => {
+          const actualId = useRegisterBar({ dataKey: "actual" });
+          useRegisterBar({ dataKey: "plan" });
+          return useBarLayout(actualId);
+        },
+        { wrapper },
+      );
+      return result.current?.bandwidth ?? 0;
+    }
+    const defaultWidth = measure(undefined);
+    const tighter = measure(0);
+    expect(tighter).toBeGreaterThan(defaultWidth);
+  });
+
+  test("bandPadding controls the main category gap", () => {
+    function measure(padding: { inner: number; outer: number } | undefined) {
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <Chart
+          width={400}
+          height={200}
+          data={[
+            { cat: "a", y: 1 },
+            { cat: "b", y: 2 },
+          ]}
+          xType="band"
+          xKey="cat"
+          bandPadding={padding}
+        >
+          {children}
+        </Chart>
+      );
+      const { result } = renderHook(() => useXScale(), { wrapper });
+      const s = result.current;
+      if (s.kind !== "band") throw new Error("expected band");
+      return s.scale.bandwidth();
+    }
+    const defaultWidth = measure(undefined);
+    const tighter = measure({ inner: 0, outer: 0 });
+    expect(tighter).toBeGreaterThan(defaultWidth);
+  });
+
+  test("bandPadding pixel input is converted to the equivalent fraction", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={100}
+        height={200}
+        data={[
+          { cat: "a", y: 1 },
+          { cat: "b", y: 2 },
+        ]}
+        xType="band"
+        xKey="cat"
+        bandPadding={{ inner: "10px", outer: 0 }}
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(() => useXScale(), { wrapper });
+    const s = result.current;
+    if (s.kind !== "band") throw new Error("expected band");
+    // 2 bars + 1 inner gap of 10px + 0 outer = 100px range → each bar 45px,
+    // inner gap 10px.
+    expect(s.scale.bandwidth()).toBeCloseTo(45, 5);
+    expect(s.scale.step() - s.scale.bandwidth()).toBeCloseTo(10, 5);
+  });
+
+  test("bandPadding percent string produces the expected d3 fraction", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[
+          { cat: "a", y: 1 },
+          { cat: "b", y: 2 },
+        ]}
+        xType="band"
+        xKey="cat"
+        bandPadding={{ inner: "20%", outer: 0 }}
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(() => useXScale(), { wrapper });
+    const s = result.current;
+    if (s.kind !== "band") throw new Error("expected band");
+    // step = 400 / (2 - 0.2) = 222.22; bandwidth = step * (1 - 0.2) = 177.78
+    expect(s.scale.step()).toBeCloseTo(400 / 1.8, 5);
+    expect(s.scale.bandwidth()).toBeCloseTo((400 / 1.8) * 0.8, 5);
+  });
+
+  test("barGroupPadding pixel input produces a fixed-pixel sub-band gap", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[{ cat: "a", x: 1, y: 2 }]}
+        xType="band"
+        xKey="cat"
+        bandPadding={{ inner: 0, outer: 0 }}
+        barGroupPadding="6px"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        const aId = useRegisterBar({ dataKey: "x" });
+        const bId = useRegisterBar({ dataKey: "y" });
+        return { a: useBarLayout(aId), b: useBarLayout(bId) };
+      },
+      { wrapper },
+    );
+    const { a, b } = result.current;
+    if (!a || !b) throw new Error("expected layouts");
+    // One category over 400px with no band padding → bandwidth 400.
+    // Two groups + 6px inner gap → each bar (400 - 6) / 2 = 197.
+    expect(a.bandwidth).toBeCloseTo(197, 5);
+    expect(b.offset - a.offset).toBeCloseTo(203, 5);
+  });
+
+  test("bar layouts: stacked bars share a slot", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[{ cat: "a", x: 1, y: 2 }]}
+        xType="band"
+        xKey="cat"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        const aId = useRegisterBar({ dataKey: "x", stackId: "s1" });
+        const bId = useRegisterBar({ dataKey: "y", stackId: "s1" });
+        return { a: useBarLayout(aId), b: useBarLayout(bId) };
+      },
+      { wrapper },
+    );
+    const { a, b } = result.current;
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    if (!a || !b) throw new Error("expected both layouts");
+    expect(a.offset).toBe(b.offset);
+    expect(a.bandwidth).toBe(b.bandwidth);
+    expect(a.slot).toBe(b.slot);
+  });
+
+  test("bar layouts: stacked bars record baseValues in registration order", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[
+          { cat: "a", x: 3, y: 5 },
+          { cat: "b", x: 4, y: 2 },
+        ]}
+        xType="band"
+        xKey="cat"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        const aId = useRegisterBar({ dataKey: "x", stackId: "s1" });
+        const bId = useRegisterBar({ dataKey: "y", stackId: "s1" });
+        return { a: useBarLayout(aId), b: useBarLayout(bId) };
+      },
+      { wrapper },
+    );
+    const { a, b } = result.current;
+    if (!a || !b) throw new Error("expected both layouts");
+    // First member sits at 0; second stacks on top of first's value.
+    expect(a.baseValues.get("a")).toBe(0);
+    expect(b.baseValues.get("a")).toBe(3);
+    expect(a.baseValues.get("b")).toBe(0);
+    expect(b.baseValues.get("b")).toBe(4);
+  });
+
+  test("bar layouts: negative values in a stack accumulate downward separately", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[{ cat: "a", p1: 3, n1: -2, p2: 5, n2: -4 }]}
+        xType="band"
+        xKey="cat"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => ({
+        p1: useBarLayout(useRegisterBar({ dataKey: "p1", stackId: "s" })),
+        n1: useBarLayout(useRegisterBar({ dataKey: "n1", stackId: "s" })),
+        p2: useBarLayout(useRegisterBar({ dataKey: "p2", stackId: "s" })),
+        n2: useBarLayout(useRegisterBar({ dataKey: "n2", stackId: "s" })),
+      }),
+      { wrapper },
+    );
+    const { p1, n1, p2, n2 } = result.current;
+    if (!p1 || !n1 || !p2 || !n2) throw new Error("expected layouts");
+    // Positives stack upward from 0, negatives downward — independent accumulators.
+    expect(p1.baseValues.get("a")).toBe(0);
+    expect(n1.baseValues.get("a")).toBe(0);
+    expect(p2.baseValues.get("a")).toBe(3);
+    expect(n2.baseValues.get("a")).toBe(-2);
+  });
+
+  test("bar layouts: unstacked bars have empty baseValues", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart width={400} height={200} data={[{ cat: "a", x: 5 }]} xType="band" xKey="cat">
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => useBarLayout(useRegisterBar({ dataKey: "x" })),
+      { wrapper },
+    );
+    expect(result.current?.baseValues.size).toBe(0);
+  });
+
+  test("y domain spans stack totals, not individual values", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[
+          { cat: "a", x: 10, y: 20 },
+          { cat: "b", x: 15, y: 25 },
+        ]}
+        xType="band"
+        xKey="cat"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        useRegisterBar({ dataKey: "x", stackId: "s" });
+        useRegisterBar({ dataKey: "y", stackId: "s" });
+        return useYScale();
+      },
+      { wrapper },
+    );
+    const ys = result.current;
+    if (ys.kind !== "linear") throw new Error("expected linear y");
+    // b's stack total is 40; without stack-aware aggregation max would be 25.
+    expect(ys.scale.domain()[1]).toBe(40);
+  });
+
+  test("bar layouts: empty when no categorical axis is band", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[{ x: 1, y: 2 }]}
+        xType="linear"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        const id = useRegisterBar({ dataKey: "y" });
+        return useBarLayout(id);
+      },
+      { wrapper },
+    );
+    expect(result.current).toBeNull();
+  });
+
+  test("horizontal bars: x domain spans stack totals across value keys", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <Chart
+        width={400}
+        height={200}
+        data={[
+          { cat: "a", low: 10, mid: 20, high: 30 },
+          { cat: "b", low: 5, mid: 15, high: 25 },
+        ]}
+        yType="band"
+        yKey="cat"
+        xType="linear"
+      >
+        {children}
+      </Chart>
+    );
+    const { result } = renderHook(
+      () => {
+        useRegisterBar({ dataKey: "low", stackId: "s" });
+        useRegisterBar({ dataKey: "mid", stackId: "s" });
+        useRegisterBar({ dataKey: "high", stackId: "s" });
+        return useXScale();
+      },
+      { wrapper },
+    );
+    const xs = result.current;
+    if (xs.kind !== "linear") throw new Error("expected linear x");
+    // First row's stack total is 60. includeZero (bars register it) pins min at 0.
+    expect(xs.scale.domain()).toEqual([0, 60]);
   });
 
   test("supports categorical band y for horizontal charts", () => {
