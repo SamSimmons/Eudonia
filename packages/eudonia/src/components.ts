@@ -1,6 +1,12 @@
 export { Card } from "./components/Card/Card";
 export { ChartCard, type ChartCardProps } from "./components/ChartCard/ChartCard";
 export { StatCard } from "./components/StatCard/StatCard";
+export { TableCard } from "./components/TableCard/TableCard";
+export type {
+  ColumnLayout,
+  ColumnSpec,
+  TableCardProps,
+} from "./components/TableCard/types";
 export { Chart, type ChartProps } from "./components/Chart/Chart";
 export type { ChartData, ChartDatum } from "./components/Chart/dataShape";
 export type {
@@ -36,6 +42,7 @@ export {
   useRegisterTreemap,
   useTreemapLayout,
 } from "./components/Chart/hooks";
+export { Area, type AreaProps } from "./components/Area/Area";
 export { Line, type LineProps } from "./components/Line/Line";
 export { LineChart, type LineChartProps } from "./components/LineChart/LineChart";
 export { Bar, type BarProps } from "./components/Bar/Bar";

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { ScreenFill } from "./pages/screen-fill";
 import { KitchenSink } from "./pages/kitchen-sink";
+import { TableCardPage } from "./pages/table-card";
 
 const routes: Record<string, () => React.JSX.Element> = {
   "/screen-fill": ScreenFill,
   "/kitchen-sink": KitchenSink,
+  "/table-card": TableCardPage,
 };
 
 function getRoute(): string {

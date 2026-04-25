@@ -10,6 +10,7 @@ Prefer library and framework answers over app scaffold, admin template, or gener
 
 ## Hard Rules
 
+- Skills are opt-in for use: do not invoke or read any skill unless the user explicitly names that skill in the current request
 - Follow the current task plan literally until the user changes it.
 - Work on the current step only.
 - Stop at the first real block.
@@ -38,6 +39,11 @@ Substantial work includes:
 - adding dependencies
 - anything that touches multiple files in a meaningful way
 - anything where the right shape is still being figured out
+
+## File Layout
+
+- Component files contain the component. Helpers, types, and small subcomponents live in named sibling files in the same folder (e.g. `resolveColumns.ts`, `types.ts`, `CaretIcon.tsx`), not inline at the bottom of the component file.
+- Public types are exported from the file that defines them.
 
 ## Plan Handling
 

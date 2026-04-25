@@ -10,23 +10,29 @@
  *   bun run scripts/check-bundle-size.ts --update  # update the baseline
  */
 
-import { $ } from "bun";
+import { $, Glob } from "bun";
 import { resolve } from "path";
 
 const ROOT = resolve(import.meta.dirname!, "..");
 const LIBRARY_DIR = `${ROOT}/packages/eudonia`;
-const DIST_FILE = `${LIBRARY_DIR}/dist/index.js`;
+const DIST_DIR = `${LIBRARY_DIR}/dist`;
 const BASELINE_FILE = `${ROOT}/tests/bundle-size-baseline.json`;
 const THRESHOLD_BYTES = 1024; // 1KB allowed growth
 
 // Build the library
 await $`bun run build`.cwd(LIBRARY_DIR).quiet();
 
-// Measure
-const source = await Bun.file(DIST_FILE).arrayBuffer();
-const gzipped = Bun.gzipSync(new Uint8Array(source));
-const rawSize = source.byteLength;
-const gzipSize = gzipped.byteLength;
+// Rollup with `preserveModules: true` emits one file per source module under
+// dist/, so the published surface is the sum of every .js file rather than a
+// single entry. Sum raw and gzipped bytes across the whole tree.
+const glob = new Glob("**/*.js");
+let rawSize = 0;
+let gzipSize = 0;
+for await (const relPath of glob.scan(DIST_DIR)) {
+  const buf = await Bun.file(`${DIST_DIR}/${relPath}`).arrayBuffer();
+  rawSize += buf.byteLength;
+  gzipSize += Bun.gzipSync(new Uint8Array(buf)).byteLength;
+}
 
 // Update mode
 if (Bun.argv.includes("--update")) {

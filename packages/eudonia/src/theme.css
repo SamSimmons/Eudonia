@@ -4,13 +4,12 @@
 
 :root {
   --eudonia-chart-line: oklch(0.55 0.15 230);
-  --eudonia-chart-axis: oklch(0.5 0 0);
-  --eudonia-chart-grid: oklch(0.9 0 0);
-  --eudonia-chart-label: oklch(0.42 0 0);
+  --eudonia-sparkline-stroke: var(--eudonia-chart-line);
+  --eudonia-sparkline-fill-from: var(--eudonia-sparkline-stroke);
+  --eudonia-sparkline-fill-to: var(--eudonia-sparkline-stroke);
   --eudonia-chart-label-size: 0.7rem;
 
   --eudonia-chart-treemap: oklch(0.62 0.14 235);
-  --eudonia-chart-treemap-stroke: oklch(1 0 0);
   --eudonia-chart-treemap-label: oklch(0.98 0 0);
   --eudonia-chart-treemap-value: oklch(0.98 0 0 / 0.85);
 
@@ -24,12 +23,34 @@
   --eudonia-chart-cat-8: oklch(0.55 0.15 340);
 }
 
+/* Light values apply when no explicit data-theme is set OR when the author
+   opts into light. Dark values live in the @media block (system-dark, no
+   opt-in) and the [data-theme="dark"] block (explicit opt-in). Splitting
+   light and dark this way avoids maintaining two copies of the light defaults
+   just to override the prefers-color-scheme block. */
+
+:root:not([data-theme]),
+[data-theme="light"] {
+  --eudonia-chart-axis: oklch(0.5 0 0);
+  --eudonia-chart-grid: oklch(0.9 0 0);
+  --eudonia-chart-label: oklch(0.42 0 0);
+  --eudonia-chart-treemap-stroke: oklch(1 0 0);
+  --eudonia-positive-bg: oklch(0.88 0.12 150 / 0.45);
+  --eudonia-positive-fg: oklch(0.3 0.12 150);
+  --eudonia-negative-bg: oklch(0.82 0.14 25 / 0.5);
+  --eudonia-negative-fg: oklch(0.32 0.13 25);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --eudonia-chart-axis: oklch(0.65 0 0);
     --eudonia-chart-grid: oklch(0.3 0 0);
     --eudonia-chart-label: oklch(0.7 0 0);
     --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
+    --eudonia-positive-bg: oklch(0.5 0.12 150 / 0.4);
+    --eudonia-positive-fg: oklch(0.92 0.05 150);
+    --eudonia-negative-bg: oklch(0.5 0.16 25 / 0.45);
+    --eudonia-negative-fg: oklch(0.92 0.05 25);
   }
 }
 
@@ -38,4 +59,8 @@
   --eudonia-chart-grid: oklch(0.3 0 0);
   --eudonia-chart-label: oklch(0.7 0 0);
   --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
+  --eudonia-positive-bg: oklch(0.5 0.12 150 / 0.4);
+  --eudonia-positive-fg: oklch(0.92 0.05 150);
+  --eudonia-negative-bg: oklch(0.5 0.16 25 / 0.45);
+  --eudonia-negative-fg: oklch(0.92 0.05 25);
 }

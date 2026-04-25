@@ -1,0 +1,163 @@
+.scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--eudonia-chart-grid) transparent;
+}
+
+.scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--eudonia-chart-grid);
+  border-radius: 3px;
+}
+
+.scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--eudonia-card-muted);
+}
+
+.scroll::-webkit-scrollbar-track,
+.scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.table {
+  display: grid;
+  width: 100%;
+  align-content: start;
+  font-size: var(--eudonia-chart-label-size, 0.7rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.table[data-layout="content"] {
+  width: max-content;
+  min-width: 100%;
+}
+
+.head,
+.body,
+.foot {
+  display: contents;
+}
+
+.tr {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.th,
+.td,
+.tf {
+  display: flex;
+  align-items: center;
+  padding: 0.4em 0.75ch;
+  line-height: 1.4em;
+}
+
+.th[data-fit="shrink"],
+.td[data-fit="shrink"],
+.tf[data-fit="shrink"] {
+  white-space: nowrap;
+}
+
+.left {
+  justify-content: flex-start;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.th {
+  color: var(--eudonia-card-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--eudonia-chart-grid);
+}
+
+.headerInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.right .headerInner {
+  flex-direction: row-reverse;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.sortIcon {
+  display: inline-grid;
+  flex-shrink: 0;
+  width: 0.7em;
+  height: 0.7em;
+  line-height: 0;
+}
+
+.sortIcon > svg {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sortIconCurrent {
+  opacity: 1;
+}
+
+.sortIconPreview {
+  opacity: 0;
+}
+
+.sortable:hover .sortIconCurrent {
+  opacity: 0;
+}
+
+.sortable:hover .sortIconPreview {
+  opacity: 0.45;
+}
+
+.td.positive {
+  background: var(--eudonia-positive-bg);
+  color: var(--eudonia-positive-fg);
+}
+
+.td.negative {
+  background: var(--eudonia-negative-bg);
+  color: var(--eudonia-negative-fg);
+}
+
+.tf {
+  font-weight: 600;
+  border-top: 1px solid var(--eudonia-chart-grid);
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 1.5em 0.75ch;
+  text-align: center;
+  color: var(--eudonia-card-muted);
+}
+
+.emptyPlaceholder {
+  /* Cells alongside .empty: kept in the accessibility tree so the empty row
+     reports the same cell count as data rows, but visually collapsed. */
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}

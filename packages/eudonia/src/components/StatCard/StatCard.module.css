@@ -1,4 +1,4 @@
-.value {
+.body {
   --eudonia-stat-value-size: clamp(2rem, 2.5vw, 3rem);
   --eudonia-stat-value-weight: 400;
   --eudonia-stat-value-tracking: -0.025em;
@@ -8,10 +8,50 @@
   place-items: center;
   padding-bottom: calc(var(--eudonia-card-title-size) * 1.2 + var(--eudonia-card-gap));
   box-sizing: border-box;
-  font-size: var(--eudonia-stat-value-size);
-  font-weight: var(--eudonia-stat-value-weight);
-  letter-spacing: var(--eudonia-stat-value-tracking);
+  min-width: 0;
+  min-height: 0;
+}
+
+.stack {
+  --eudonia-stat-layout-gap: var(--eudonia-card-gap);
+  --eudonia-stat-stack-value-fr: 0.33fr;
+  --eudonia-stat-stack-chart-fr: 1fr;
+
+  flex: 1;
+  display: grid;
+  grid-template-rows:
+    minmax(0, var(--eudonia-stat-stack-value-fr))
+    minmax(0, var(--eudonia-stat-stack-chart-fr));
+  gap: var(--eudonia-stat-layout-gap);
+  min-width: 0;
+  min-height: 0;
+}
+
+.split {
+  --eudonia-stat-layout-gap: var(--eudonia-card-gap);
+
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--eudonia-stat-layout-gap);
+  min-width: 0;
+  min-height: 0;
+}
+
+.value {
+  font-size: var(--eudonia-stat-value-size, clamp(2rem, 2.5vw, 3rem));
+  font-weight: var(--eudonia-stat-value-weight, 400);
+  letter-spacing: var(--eudonia-stat-value-tracking, -0.025em);
   line-height: 1;
   color: var(--eudonia-card-fg);
   font-variant-numeric: tabular-nums;
+}
+
+.sparkline {
+  /* StatCard pairs a single large value with a quiet trend chart, so the
+     sparkline tracks the card foreground rather than the chart palette. */
+  --eudonia-sparkline-stroke: var(--eudonia-card-fg);
+
+  min-width: 0;
+  min-height: 0;
 }

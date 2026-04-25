@@ -20,7 +20,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf dist tsconfig.build.tsbuildinfo && rollup -c && tsc -p ./tsconfig.build.json && cp src/theme.css dist/theme.css",
+    "build": "rm -rf dist tsconfig.build.tsbuildinfo && rollup -c && tsc -p ./tsconfig.build.json",
     "dev": "rollup -c -w & tsc -p ./tsconfig.build.json --watch --preserveWatchOutput",
     "prepack": "bun run build",
     "test": "bun test",
@@ -55,6 +55,7 @@
     "typescript-eslint": "^8.58.2"
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@visx/axis": "^3.12.0",
     "@visx/grid": "^3.12.0",
     "@visx/responsive": "^3.12.0",

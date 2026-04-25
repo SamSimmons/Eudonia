@@ -74,5 +74,5 @@
   --eudonia-card-bg: #ffffff;
   --eudonia-card-fg: #1f2937;
   --eudonia-card-muted: #6b7280;
-  --eudonia-card-border: none;
+  --eudonia-card-border: 1px solid #a1a1aa;
 }
