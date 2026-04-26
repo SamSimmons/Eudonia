@@ -50,14 +50,30 @@ describe("Screen", () => {
     expect(element.style.overflow).toBe("hidden");
   });
 
+  test("palette resolves to inline CSS variables on the root", () => {
+    const { getByTestId } = render(
+      <Screen data-testid="screen" palette="tableau-10" />,
+    );
+
+    const element = getByTestId("screen");
+    // Palette serializes to inline CSS custom properties — the spread order
+    // (palette first, user `style` second) is enforced by Screen.tsx so that
+    // explicit consumer overrides on `style` win.
+    expect(element.style.getPropertyValue("--eudonia-chart-cat-1")).toBe(
+      "oklch(0.564 0.086 251.1)",
+    );
+  });
+
   test("injects the viewport height stylesheet", () => {
     render(<Screen />);
 
     const styleElement = document.head.querySelector('style[data-href="eudonia-screen"]');
 
     expect(styleElement).toBeTruthy();
-    expect(styleElement?.textContent).toBe(
-      ".eudonia-screen{height:100vh;height:100dvh}",
-    );
+    const css = styleElement?.textContent ?? "";
+    expect(css).toContain("height:100vh");
+    expect(css).toContain("height:100dvh");
+    expect(css).toContain("background:var(--eudonia-bg)");
+    expect(css).toContain("tabular-nums");
   });
 });

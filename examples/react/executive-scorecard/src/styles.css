@@ -7,7 +7,17 @@ body,
 }
 
 body {
-  font-family: "Geist", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--eudonia-font);
+}
+
+/* StatCard renders its value with the hashed CSS module class
+   `eudonia_value_<hash>`. We override just the headline numerics to
+   proportional Geist for a softer scorecard feel; the rest of the UI
+   stays on Geist Mono. */
+[class*="eudonia_value_"] {
+  font-family:
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 button,
@@ -16,10 +26,28 @@ table {
   font: inherit;
 }
 
-.theme-toggle {
+.dev-controls {
   position: fixed;
   right: 16px;
   bottom: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.palette-picker {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--eudonia-border);
+  border-radius: var(--eudonia-radius-sm);
+  background: var(--eudonia-fg);
+  color: var(--eudonia-text);
+  font-family: var(--eudonia-font);
+  font-size: var(--eudonia-text-xs);
+  cursor: pointer;
+}
+
+.theme-toggle {
   width: 32px;
   height: 32px;
   padding: 0;

@@ -1,24 +1,29 @@
 .root {
-  --eudonia-card-bg: oklch(0.98 0 0);
+  --eudonia-card-bg: var(--eudonia-fg);
+  --eudonia-card-bg-bottom: var(--eudonia-fg-elevated);
   --eudonia-card-border: none;
-  --eudonia-card-radius: 8px;
-  --eudonia-card-padding: 0.5rem;
-  --eudonia-card-gap: 0.25rem;
-  --eudonia-card-fg: #0a0907;
-  --eudonia-card-muted: #6b7280;
-  --eudonia-card-title-size: 0.8rem;
-  --eudonia-card-title-weight: 400;
-  --eudonia-card-title-tracking: normal;
-  --eudonia-card-subtitle-size: 0.7rem;
-  --eudonia-card-subtitle-weight: 400;
-  --eudonia-card-subtitle-tracking: normal;
-  --eudonia-card-shadow:
-    0 1px 2px oklch(0 0 0 / 0.03),
-    0 4px 8px oklch(0 0 0 / 0.03),
-    inset 0 0.5px 0 oklch(0.92 0.05 94.29 / 0.5),
-    inset 0.5px 0 0 oklch(0.92 0.05 94.29 / 0.5),
-    inset 0 -1px 0 oklch(0.21 0 0 / 0.05),
-    inset -1px 0 0 oklch(0.21 0 0 / 0.05);
+  --eudonia-card-radius: var(--eudonia-radius-md);
+  --eudonia-card-padding: var(--eudonia-space-3);
+  --eudonia-card-gap: var(--eudonia-space-1);
+  --eudonia-card-fg: var(--eudonia-text);
+  --eudonia-card-muted: var(--eudonia-text-muted);
+  --eudonia-card-title-size: var(--eudonia-label-size);
+  --eudonia-card-title-weight: var(--eudonia-label-weight);
+  --eudonia-card-title-tracking: var(--eudonia-label-tracking);
+  --eudonia-card-title-line-height: var(--eudonia-label-line-height);
+  --eudonia-card-title-transform: var(--eudonia-label-transform);
+  --eudonia-card-title-color: var(--eudonia-label-color);
+  --eudonia-card-subtitle-size: var(--eudonia-subtitle-size);
+  --eudonia-card-subtitle-weight: var(--eudonia-subtitle-weight);
+  --eudonia-card-subtitle-tracking: var(--eudonia-subtitle-tracking);
+  --eudonia-card-subtitle-line-height: var(--eudonia-subtitle-line-height);
+  --eudonia-card-subtitle-transform: var(--eudonia-subtitle-transform);
+  --eudonia-card-subtitle-color: var(--eudonia-subtitle-color);
+  --eudonia-card-shadow-highlight: inset 0 1px 0 0 var(--eudonia-highlight);
+  --eudonia-card-shadow-ring: 0 0 0 1px var(--eudonia-border);
+  --eudonia-card-shadow-1: 0 1px 1px -0.5px oklch(0.2 0.04 195 / 0.06);
+  --eudonia-card-shadow-2: 0 3px 3px -1.5px oklch(0.2 0.04 195 / 0.07);
+  --eudonia-card-shadow-3: 0 6px 6px -3px oklch(0.2 0.04 195 / 0.08);
 
   box-sizing: border-box;
   width: 100%;
@@ -28,51 +33,65 @@
   display: flex;
   flex-direction: column;
   gap: var(--eudonia-card-gap);
-  background: var(--eudonia-card-bg);
+  background: linear-gradient(
+    180deg,
+    var(--eudonia-card-bg) 0%,
+    var(--eudonia-card-bg-bottom) 100%
+  );
   border: var(--eudonia-card-border);
   border-radius: var(--eudonia-card-radius);
   padding: var(--eudonia-card-padding);
   color: var(--eudonia-card-fg);
-  box-shadow: var(--eudonia-card-shadow);
+  box-shadow:
+    var(--eudonia-card-shadow-highlight),
+    var(--eudonia-card-shadow-ring),
+    var(--eudonia-card-shadow-1),
+    var(--eudonia-card-shadow-2),
+    var(--eudonia-card-shadow-3);
 }
 
 .title {
   margin: 0;
-  color: var(--eudonia-card-muted);
+  color: var(--eudonia-card-title-color);
   font-size: var(--eudonia-card-title-size);
   font-weight: var(--eudonia-card-title-weight);
   letter-spacing: var(--eudonia-card-title-tracking);
-  line-height: 1.2;
+  line-height: var(--eudonia-card-title-line-height);
+  text-transform: var(--eudonia-card-title-transform);
+  text-wrap: balance;
+}
+
+/* Step the title token down on small/short viewports. Overriding the token
+   (rather than `.title { font-size }`) keeps consumer overrides working AND
+   lets dependent calcs — like StatCard's optical padding-bottom — track. */
+@media (max-width: 900px), (max-height: 650px) {
+  .root { --eudonia-card-title-size: 0.625rem; }
+}
+@media (max-width: 650px), (max-height: 500px) {
+  .root { --eudonia-card-title-size: 0.55rem; }
 }
 
 .subtitle {
   margin: 0;
-  color: var(--eudonia-card-muted);
+  color: var(--eudonia-card-subtitle-color);
   font-size: var(--eudonia-card-subtitle-size);
   font-weight: var(--eudonia-card-subtitle-weight);
   letter-spacing: var(--eudonia-card-subtitle-tracking);
-  line-height: 1.2;
+  line-height: var(--eudonia-card-subtitle-line-height);
+  text-transform: var(--eudonia-card-subtitle-transform);
+  text-wrap: pretty;
 }
 
 @media (prefers-color-scheme: dark) {
-  .root {
-    --eudonia-card-bg: #18181b;
-    --eudonia-card-fg: #f4f4f5;
-    --eudonia-card-muted: #a1a1aa;
-    --eudonia-card-border: 1px solid #27272a;
+  :root:not([data-theme]) .root {
+    --eudonia-card-shadow-1: 0 1px 1px -0.5px oklch(0 0 0 / 0.2);
+    --eudonia-card-shadow-2: 0 3px 3px -1.5px oklch(0 0 0 / 0.22);
+    --eudonia-card-shadow-3: 0 6px 6px -3px oklch(0 0 0 / 0.24);
   }
 }
 
 [data-theme="dark"] .root {
-  --eudonia-card-bg: #18181b;
-  --eudonia-card-fg: #f4f4f5;
-  --eudonia-card-muted: #a1a1aa;
-  --eudonia-card-border: 1px solid #27272a;
-}
-
-[data-theme="light"] .root {
-  --eudonia-card-bg: #ffffff;
-  --eudonia-card-fg: #1f2937;
-  --eudonia-card-muted: #6b7280;
-  --eudonia-card-border: 1px solid #a1a1aa;
+  --eudonia-card-shadow-1: 0 1px 1px -0.5px oklch(0 0 0 / 0.2);
+  --eudonia-card-shadow-2: 0 3px 3px -1.5px oklch(0 0 0 / 0.22);
+  --eudonia-card-shadow-3: 0 6px 6px -3px oklch(0 0 0 / 0.24);
 }

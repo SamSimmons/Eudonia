@@ -1,13 +1,13 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
-import { Card } from "../Card/Card";
+import { Card, type CardRootProps } from "../Card/Card";
 import { Sparkline, type SparklineProps } from "../Sparkline/Sparkline";
 
 import styles from "./StatCard.module.css";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 
-interface StatCardRootProps extends Omit<DivProps, "title"> {
+interface StatCardRootProps extends Omit<CardRootProps, "title"> {
   title?: ReactNode;
   value?: ReactNode;
 }
@@ -58,8 +58,17 @@ function StatCardValue({ children, className = "", ...props }: DivProps) {
   );
 }
 
-function StatCardSparkline({ className = "", ...props }: SparklineProps) {
-  return <Sparkline {...props} className={`${styles.sparkline} ${className}`} />;
+function StatCardSparkline({ className = "", stroke, ...props }: SparklineProps) {
+  // StatCard pairs a single large value with a quiet trend chart, so the
+  // sparkline tracks the card foreground rather than the chart palette.
+  // Consumer-passed `stroke` still wins.
+  return (
+    <Sparkline
+      {...props}
+      stroke={stroke ?? "var(--eudonia-card-fg)"}
+      className={`${styles.sparkline} ${className}`}
+    />
+  );
 }
 
 export const StatCard = Object.assign(StatCardRoot, {

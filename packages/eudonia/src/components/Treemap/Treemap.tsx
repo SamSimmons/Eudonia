@@ -20,7 +20,7 @@ import type {
   TreemapValueFormat,
 } from "./types";
 
-const DEFAULT_FILL = "var(--eudonia-chart-treemap, oklch(0.7 0.1 230))";
+const DEFAULT_FILL = "var(--eudonia-chart-cat-1, oklch(0.7 0.1 230))";
 const DEFAULT_STROKE = "var(--eudonia-chart-treemap-stroke, var(--eudonia-card-bg, #fff))";
 
 export interface TreemapProps<T extends TreemapNodeBase = TreemapNodeBase> {

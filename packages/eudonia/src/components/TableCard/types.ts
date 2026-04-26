@@ -1,4 +1,6 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ReactNode } from "react";
+
+import type { CardRootProps } from "../Card/Card";
 
 import type { FormatSpec } from "./format";
 
@@ -48,10 +50,8 @@ export type FooterProp<T> = string | { [K in keyof T]?: FooterCell<T> };
 
 export type ColumnLayout = "stretch-first" | "content" | "equal";
 
-type DivProps = ComponentPropsWithoutRef<"div">;
-
 export interface TableCardProps<T extends Record<string, unknown>>
-  extends Omit<DivProps, "title" | "children"> {
+  extends Omit<CardRootProps, "title" | "children"> {
   title?: ReactNode;
   subtitle?: ReactNode;
   data: readonly T[];

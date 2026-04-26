@@ -11,6 +11,7 @@ export interface TreemapChartProps<T extends TreemapNodeBase = TreemapNodeBase> 
   margin?: ChartProps["margin"];
   width?: ChartProps["width"];
   height?: ChartProps["height"];
+  palette?: ChartProps["palette"];
   tile?: TreemapProps<T>["tile"];
   padding?: TreemapProps<T>["padding"];
   colors?: readonly string[] | TreemapProps<T>["fill"];
@@ -32,6 +33,7 @@ export function TreemapChart<T extends TreemapNodeBase = TreemapNodeBase>({
   margin,
   width,
   height,
+  palette,
   tile,
   padding,
   colors,
@@ -50,7 +52,7 @@ export function TreemapChart<T extends TreemapNodeBase = TreemapNodeBase>({
   const fill = resolveFill<T>(colors);
 
   return (
-    <Chart data={data} margin={margin} width={width} height={height} className={className} style={style}>
+    <Chart data={data} margin={margin} width={width} height={height} palette={palette} className={className} style={style}>
       <Treemap<T>
         tile={tile}
         padding={padding}

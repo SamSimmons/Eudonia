@@ -1,12 +1,10 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ReactNode } from "react";
 
-import { Card } from "../Card/Card";
+import { Card, type CardRootProps } from "../Card/Card";
 
 import styles from "./ChartCard.module.css";
 
-type DivProps = ComponentPropsWithoutRef<"div">;
-
-export interface ChartCardProps extends Omit<DivProps, "title"> {
+export interface ChartCardProps extends Omit<CardRootProps, "title"> {
   title?: ReactNode;
   subtitle?: ReactNode;
   body?: ReactNode;

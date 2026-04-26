@@ -1,12 +1,36 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, CSSProperties } from "react";
+
+import { resolvePalette } from "@/color/resolvePalette";
+import type { PaletteProp } from "@/color/types";
 
 import styles from "./Card.module.css";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 
-function CardRoot({ children, className = "", ...props }: DivProps) {
+export interface CardRootProps extends DivProps {
+  palette?: PaletteProp;
+}
+
+function CardRoot({
+  children,
+  className = "",
+  palette,
+  style,
+  ...props
+}: CardRootProps) {
+  const { style: paletteStyle } = resolvePalette(palette);
+  // Spread palette first so explicit `style` overrides win — the consumer's
+  // inline tokens are the most specific intent.
+  const mergedStyle: CSSProperties | undefined =
+    paletteStyle === undefined && style === undefined
+      ? undefined
+      : { ...paletteStyle, ...style };
   return (
-    <div {...props} className={`${styles.root} ${className}`}>
+    <div
+      {...props}
+      className={`${styles.root} ${className}`}
+      style={mergedStyle}
+    >
       {children}
     </div>
   );

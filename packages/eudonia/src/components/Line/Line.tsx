@@ -24,7 +24,7 @@ export interface LineProps extends PathProps {
 
 export function Line({
   dataKey,
-  stroke = "var(--eudonia-chart-line, oklch(0.55 0.15 230))",
+  stroke = "var(--eudonia-chart-cat-1, oklch(0.55 0.15 230))",
   strokeWidth = 1.5,
   className,
   ...props

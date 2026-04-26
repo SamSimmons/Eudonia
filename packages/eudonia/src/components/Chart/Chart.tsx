@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import { resolvePalette } from "@/color/resolvePalette";
+import type { PaletteProp } from "@/color/types";
 import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 
 import styles from "./Chart.module.css";
@@ -38,6 +40,9 @@ export interface ChartProps extends Omit<DivProps, "children"> {
   margin?: Partial<ChartMargin>;
   width?: number;
   height?: number;
+  // Palette override for this chart's subtree. Resolves to CSS vars on the
+  // root element so descendants pick the palette up via theme tokens.
+  palette?: PaletteProp;
   children?: ReactNode;
 }
 
@@ -56,6 +61,7 @@ export function Chart({
   margin,
   width,
   height,
+  palette,
   children,
   className = "",
   style,
@@ -130,7 +136,11 @@ export function Chart({
     };
   }, [store, width, height]);
 
+  const { style: paletteStyle } = resolvePalette(palette);
+  // Palette spreads under the consumer's `style` so explicit inline tokens
+  // (e.g. `style={{ "--eudonia-chart-cat-1": "red" }}`) win.
   const rootStyle = {
+    ...paletteStyle,
     ...style,
     ...(width !== undefined && { width }),
     ...(height !== undefined && { height }),

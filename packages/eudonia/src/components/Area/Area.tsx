@@ -24,7 +24,7 @@ export interface AreaProps extends PathProps {
 
 export function Area({
   dataKey,
-  fill = "var(--eudonia-chart-area, var(--eudonia-chart-line, oklch(0.55 0.15 230)))",
+  fill = "var(--eudonia-chart-area, var(--eudonia-chart-cat-1, oklch(0.55 0.15 230)))",
   className,
   ...props
 }: AreaProps) {

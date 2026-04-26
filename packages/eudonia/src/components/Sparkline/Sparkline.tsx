@@ -1,5 +1,7 @@
 import { useId, type ComponentPropsWithoutRef } from "react";
 
+import type { PaletteProp } from "@/color/types";
+
 import { Area } from "../Area/Area";
 import { Chart } from "../Chart/Chart";
 import type { ChartDatum } from "../Chart/dataShape";
@@ -30,6 +32,7 @@ interface SparklineBaseProps extends Omit<DivProps, "children"> {
   margin?: Partial<ChartMargin>;
   width?: number;
   height?: number;
+  palette?: PaletteProp;
 }
 
 interface SparklineValuesProps extends SparklineBaseProps {
@@ -59,6 +62,7 @@ export function Sparkline({
   margin = { top: 2, right: 2, bottom: 2, left: 2 },
   width,
   height,
+  palette,
   className = "",
   ...props
 }: SparklineProps) {
@@ -69,7 +73,7 @@ export function Sparkline({
   // Resolve once per series, then render defs, areas, and lines as separate
   // sibling groups so we emit a single <defs> block instead of one per series.
   const series = keys.map((key, index) => {
-    const resolvedStroke = resolveStroke(stroke, index, keys.length);
+    const resolvedStroke = resolveStroke(stroke, index);
     const resolvedFill = resolveFill(fill, index);
     const isSolidFill = typeof resolvedFill === "string";
     const gradient =
@@ -94,6 +98,7 @@ export function Sparkline({
       margin={margin}
       width={width}
       height={height}
+      palette={palette}
       className={className}
       {...props}
     >
@@ -142,14 +147,12 @@ export function Sparkline({
 function resolveStroke(
   stroke: SparklineBaseProps["stroke"],
   index: number,
-  seriesCount: number,
 ): string {
   if (isReadonlyArray<string | undefined>(stroke)) {
     return stroke[index] ?? paletteColor(index);
   }
   if (stroke) return stroke;
-  if (seriesCount > 1) return paletteColor(index);
-  return "var(--eudonia-sparkline-stroke, oklch(0.55 0.15 230))";
+  return paletteColor(index);
 }
 
 function resolveFill(

@@ -19,6 +19,7 @@ export interface BarChartProps {
   margin?: ChartProps["margin"];
   width?: ChartProps["width"];
   height?: ChartProps["height"];
+  palette?: ChartProps["palette"];
   xAxis?: XAxisProps | false;
   yAxis?: YAxisProps | false;
   gridlines?: boolean | GridlinesProps;
@@ -43,6 +44,7 @@ export function BarChart({
   margin,
   width,
   height,
+  palette,
   xAxis,
   yAxis,
   gridlines = true,
@@ -70,6 +72,7 @@ export function BarChart({
       margin={margin}
       width={width}
       height={height}
+      palette={palette}
       className={className}
       style={style}
     >

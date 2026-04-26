@@ -3,25 +3,59 @@
    Override any token at :root, on a theme container, or inline on the chart. */
 
 :root {
-  --eudonia-chart-line: oklch(0.55 0.15 230);
-  --eudonia-sparkline-stroke: var(--eudonia-chart-line);
-  --eudonia-sparkline-fill-from: var(--eudonia-sparkline-stroke);
-  --eudonia-sparkline-fill-to: var(--eudonia-sparkline-stroke);
-  --eudonia-chart-label-size: 0.7rem;
+  --eudonia-chart-label-size: var(--eudonia-text-xs);
 
-  --eudonia-chart-treemap: oklch(0.62 0.14 235);
+  /* Default categorical palette = Figma's UI preset / file-label colors —
+     the swatches Figma uses throughout their app for color tagging.
+     Slot 1 doubles as the line/treemap base. */
+  --eudonia-chart-cat-1: oklch(0.670 0.183 249.2); /* blue   (#0D99FF) */
+  --eudonia-chart-cat-2: oklch(0.796 0.163 68.8);  /* orange (#FFA629) */
+  --eudonia-chart-cat-3: oklch(0.868 0.169 89.8);  /* yellow (#FFCD29) */
+  --eudonia-chart-cat-4: oklch(0.660 0.168 152.3); /* green  (#14AE5C) */
+  --eudonia-chart-cat-5: oklch(0.642 0.212 33.7);  /* red    (#F24822) */
+  --eudonia-chart-cat-6: oklch(0.598 0.254 298.0); /* violet (#9747FF) */
+  --eudonia-chart-cat-7: oklch(0.606 0.230 9.6);   /* pink   (#E91E63) */
+  --eudonia-chart-cat-8: oklch(0.648 0.110 206.5); /* teal   (#04A1B0) */
+
   --eudonia-chart-treemap-label: oklch(0.98 0 0);
   --eudonia-chart-treemap-value: oklch(0.98 0 0 / 0.85);
-
-  --eudonia-chart-cat-1: oklch(0.62 0.14 235);
-  --eudonia-chart-cat-2: oklch(0.65 0.15 155);
-  --eudonia-chart-cat-3: oklch(0.68 0.15 75);
-  --eudonia-chart-cat-4: oklch(0.6 0.17 25);
-  --eudonia-chart-cat-5: oklch(0.55 0.17 300);
-  --eudonia-chart-cat-6: oklch(0.6 0.13 200);
-  --eudonia-chart-cat-7: oklch(0.7 0.12 100);
-  --eudonia-chart-cat-8: oklch(0.55 0.15 340);
 }
+
+/* Sequential palette — single-hue ramp (default: blues). Light → dark
+   across 9 stops. Use seq-1 for the lightest, seq-9 for the darkest.
+   Lightness varies monotonically so the ramp remains ordered when grayscaled
+   (Brewer / Crameri). */
+:root:not([data-theme]),
+[data-theme="light"] {
+  --eudonia-chart-seq-1: oklch(0.96 0.018 230);
+  --eudonia-chart-seq-2: oklch(0.9 0.04 230);
+  --eudonia-chart-seq-3: oklch(0.82 0.07 230);
+  --eudonia-chart-seq-4: oklch(0.74 0.1 230);
+  --eudonia-chart-seq-5: oklch(0.62 0.13 230);
+  --eudonia-chart-seq-6: oklch(0.52 0.14 230);
+  --eudonia-chart-seq-7: oklch(0.42 0.13 230);
+  --eudonia-chart-seq-8: oklch(0.32 0.1 230);
+  --eudonia-chart-seq-9: oklch(0.22 0.07 230);
+}
+
+/* Diverging palette — symmetric red ↔ neutral ↔ green, 7 stops with the
+   midpoint at index 4 (`div-mid`). For variance, delta, profit/loss
+   columns. Both arms have matched perceptual weight so neither side
+   visually dominates (Crameri). */
+:root:not([data-theme]),
+[data-theme="light"] {
+  --eudonia-chart-div-1: oklch(0.55 0.16 25);
+  --eudonia-chart-div-2: oklch(0.7 0.12 25);
+  --eudonia-chart-div-3: oklch(0.85 0.06 25);
+  --eudonia-chart-div-4: oklch(0.96 0 220);
+  --eudonia-chart-div-5: oklch(0.85 0.06 150);
+  --eudonia-chart-div-6: oklch(0.7 0.12 150);
+  --eudonia-chart-div-7: oklch(0.55 0.16 150);
+  --eudonia-chart-div-low: var(--eudonia-chart-div-1);
+  --eudonia-chart-div-mid: var(--eudonia-chart-div-4);
+  --eudonia-chart-div-high: var(--eudonia-chart-div-7);
+}
+
 
 /* Light values apply when no explicit data-theme is set OR when the author
    opts into light. Dark values live in the @media block (system-dark, no
@@ -29,38 +63,199 @@
    light and dark this way avoids maintaining two copies of the light defaults
    just to override the prefers-color-scheme block. */
 
+:root {
+  /* Semantic positive/negative recipe — palettes set only hue + chroma; the
+     light and dark theme blocks pick lightness and alpha. Default = a green
+     (positive) / red (negative) flavored to match Figma's defaults. */
+  --eudonia-positive-h: 152;
+  --eudonia-positive-c: 0.168;
+  --eudonia-negative-h: 34;
+  --eudonia-negative-c: 0.212;
+
+  --eudonia-radius-sm: 6px;
+  --eudonia-radius-md: 10px;
+  --eudonia-radius-lg: 14px;
+  --eudonia-space-1: 4px;
+  --eudonia-space-2: 8px;
+  --eudonia-space-3: 12px;
+  --eudonia-space-4: 16px;
+  --eudonia-space-5: 24px;
+  --eudonia-text-xs: 0.7rem;
+  --eudonia-text-sm: 0.8rem;
+  --eudonia-text-md: 0.875rem;
+  --eudonia-text-lg: 1rem;
+  --eudonia-text-xl: 1.5rem;
+  --eudonia-text-2xl: 2rem;
+  --eudonia-text-3xl: 3rem;
+
+  /* Recommended font stack for consumers (the library does not apply
+     `font-family` itself; wire `body { font-family: var(--eudonia-font) }`
+     to opt in). Geist Mono suits the analytical voice eudonia leans into. */
+  --eudonia-font:
+    "Geist Mono", ui-monospace, "SF Mono", "Menlo", "Monaco", "Cascadia Mono",
+    "Roboto Mono", monospace;
+
+  /* Composite typographic styles. Each role is a full recipe (size / weight /
+     tracking / line-height / case / color) so components can compose by role
+     and consumers can override the role globally without touching components. */
+
+  /* Label — tracked uppercase metadata (Bringhurst's tracked-header recipe).
+     Used by card titles and table headers. Mono fonts are already wide per
+     glyph, so tracking stays tight (0.02em) — sans defaults of 0.05–0.07em
+     read as obnoxious in mono. */
+  --eudonia-label-size: var(--eudonia-text-xs);
+  --eudonia-label-weight: 500;
+  --eudonia-label-tracking: 0.02em;
+  --eudonia-label-line-height: 1.4;
+  --eudonia-label-transform: uppercase;
+
+  /* Subtitle — quiet sentence-case helper line. */
+  --eudonia-subtitle-size: var(--eudonia-text-xs);
+  --eudonia-subtitle-weight: 400;
+  --eudonia-subtitle-tracking: 0;
+  --eudonia-subtitle-line-height: 1.4;
+  --eudonia-subtitle-transform: none;
+
+  /* Value — dominant numeric display. */
+  --eudonia-value-size: clamp(2rem, 2.5vw, 3rem);
+  --eudonia-value-weight: 500;
+  --eudonia-value-tracking: -0.02em;
+  --eudonia-value-line-height: 1;
+
+  /* Body — table cells, in-card prose. */
+  --eudonia-body-size: var(--eudonia-text-xs);
+  --eudonia-body-weight: 400;
+  --eudonia-body-tracking: 0;
+  --eudonia-body-line-height: 1.45;
+}
+
 :root:not([data-theme]),
 [data-theme="light"] {
-  --eudonia-chart-axis: oklch(0.5 0 0);
-  --eudonia-chart-grid: oklch(0.9 0 0);
-  --eudonia-chart-label: oklch(0.42 0 0);
-  --eudonia-chart-treemap-stroke: oklch(1 0 0);
-  --eudonia-positive-bg: oklch(0.88 0.12 150 / 0.45);
-  --eudonia-positive-fg: oklch(0.3 0.12 150);
-  --eudonia-negative-bg: oklch(0.82 0.14 25 / 0.5);
-  --eudonia-negative-fg: oklch(0.32 0.13 25);
+  --eudonia-bg: oklch(0.92 0.01 194.05);
+  --eudonia-fg: oklch(0.97 0.004 220);
+  --eudonia-fg-elevated: oklch(0.94 0.004 220);
+  --eudonia-text: oklch(0.32 0.005 220);
+  --eudonia-text-muted: oklch(0.55 0.012 220);
+  --eudonia-text-subtle: oklch(0.75 0.008 220);
+  --eudonia-border: oklch(0.2 0.005 220 / 0.1);
+  --eudonia-highlight: oklch(1 0 0 / 0.5);
+
+  --eudonia-label-color: var(--eudonia-text-muted);
+  --eudonia-subtitle-color: var(--eudonia-text-subtle);
+  --eudonia-value-color: var(--eudonia-text);
+  --eudonia-body-color: var(--eudonia-text);
+  --eudonia-chart-axis: oklch(0.2 0.005 220 / 0.2);
+  --eudonia-chart-grid: var(--eudonia-border);
+  --eudonia-chart-label: var(--eudonia-text-muted);
+  --eudonia-chart-treemap-stroke: var(--eudonia-fg);
+}
+
+/* Positive/negative recipes need to re-substitute --eudonia-positive-h/c at
+   every element so per-Screen palette overrides flow through. CSS resolves
+   var() inside a custom property at the *declaring* element, so a single
+   :root declaration would freeze h/c at :root values. The `*` selector forces
+   per-element computation; per-mode branches set the L / alpha. */
+:root:not([data-theme]) *,
+[data-theme="light"] * {
+  --eudonia-positive-bg: oklch(0.80 var(--eudonia-positive-c) var(--eudonia-positive-h) / 0.55);
+  --eudonia-positive-fg: oklch(0.36 var(--eudonia-positive-c) var(--eudonia-positive-h));
+  --eudonia-negative-bg: oklch(0.78 var(--eudonia-negative-c) var(--eudonia-negative-h) / 0.60);
+  --eudonia-negative-fg: oklch(0.38 var(--eudonia-negative-c) var(--eudonia-negative-h));
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --eudonia-chart-axis: oklch(0.65 0 0);
-    --eudonia-chart-grid: oklch(0.3 0 0);
-    --eudonia-chart-label: oklch(0.7 0 0);
-    --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
-    --eudonia-positive-bg: oklch(0.5 0.12 150 / 0.4);
-    --eudonia-positive-fg: oklch(0.92 0.05 150);
-    --eudonia-negative-bg: oklch(0.5 0.16 25 / 0.45);
-    --eudonia-negative-fg: oklch(0.92 0.05 25);
+    --eudonia-bg: oklch(0.18 0.005 220);
+    --eudonia-fg: oklch(0.23 0.005 220);
+    --eudonia-fg-elevated: oklch(0.2 0.005 220);
+    --eudonia-text: oklch(0.96 0.004 220);
+    --eudonia-text-muted: oklch(0.65 0.008 220);
+    --eudonia-text-subtle: oklch(0.5 0.008 220);
+    --eudonia-border: oklch(1 0 0 / 0.1);
+    --eudonia-highlight: oklch(1 0 0 / 0.05);
+
+    /* Sequential dark — L direction inverts so seq-1 stays "closest to
+       the surface" (least visible) and seq-N stays "most contrasting." */
+    --eudonia-chart-seq-1: oklch(0.22 0.05 230);
+    --eudonia-chart-seq-2: oklch(0.32 0.08 230);
+    --eudonia-chart-seq-3: oklch(0.42 0.11 230);
+    --eudonia-chart-seq-4: oklch(0.52 0.13 230);
+    --eudonia-chart-seq-5: oklch(0.62 0.14 230);
+    --eudonia-chart-seq-6: oklch(0.72 0.13 230);
+    --eudonia-chart-seq-7: oklch(0.8 0.11 230);
+    --eudonia-chart-seq-8: oklch(0.88 0.08 230);
+    --eudonia-chart-seq-9: oklch(0.94 0.05 230);
+
+    /* Diverging dark — same hues, neutral midpoint shifts to a dark tint. */
+    --eudonia-chart-div-1: oklch(0.55 0.16 25);
+    --eudonia-chart-div-2: oklch(0.45 0.12 25);
+    --eudonia-chart-div-3: oklch(0.32 0.07 25);
+    --eudonia-chart-div-4: oklch(0.23 0 220);
+    --eudonia-chart-div-5: oklch(0.32 0.07 150);
+    --eudonia-chart-div-6: oklch(0.45 0.12 150);
+    --eudonia-chart-div-7: oklch(0.55 0.16 150);
+
+    --eudonia-label-color: var(--eudonia-text-muted);
+    --eudonia-subtitle-color: var(--eudonia-text-subtle);
+    --eudonia-value-color: var(--eudonia-text);
+    --eudonia-body-color: var(--eudonia-text);
+
+    --eudonia-chart-axis: oklch(1 0 0 / 0.2);
+    --eudonia-chart-grid: var(--eudonia-border);
+    --eudonia-chart-label: var(--eudonia-text-muted);
+    --eudonia-chart-treemap-stroke: var(--eudonia-fg);
+  }
+
+  :root:not([data-theme]) * {
+    --eudonia-positive-bg: oklch(0.42 var(--eudonia-positive-c) var(--eudonia-positive-h) / 0.40);
+    --eudonia-positive-fg: oklch(0.88 var(--eudonia-positive-c) var(--eudonia-positive-h));
+    --eudonia-negative-bg: oklch(0.44 var(--eudonia-negative-c) var(--eudonia-negative-h) / 0.45);
+    --eudonia-negative-fg: oklch(0.90 var(--eudonia-negative-c) var(--eudonia-negative-h));
   }
 }
 
 [data-theme="dark"] {
-  --eudonia-chart-axis: oklch(0.65 0 0);
-  --eudonia-chart-grid: oklch(0.3 0 0);
-  --eudonia-chart-label: oklch(0.7 0 0);
-  --eudonia-chart-treemap-stroke: oklch(0.15 0 0);
-  --eudonia-positive-bg: oklch(0.5 0.12 150 / 0.4);
-  --eudonia-positive-fg: oklch(0.92 0.05 150);
-  --eudonia-negative-bg: oklch(0.5 0.16 25 / 0.45);
-  --eudonia-negative-fg: oklch(0.92 0.05 25);
+  --eudonia-bg: oklch(0.18 0.005 220);
+  --eudonia-fg: oklch(0.23 0.005 220);
+  --eudonia-fg-elevated: oklch(0.2 0.005 220);
+  --eudonia-text: oklch(0.96 0.004 220);
+  --eudonia-text-muted: oklch(0.65 0.008 220);
+  --eudonia-text-subtle: oklch(0.5 0.008 220);
+  --eudonia-border: oklch(1 0 0 / 0.1);
+  --eudonia-highlight: oklch(1 0 0 / 0.05);
+
+  --eudonia-chart-seq-1: oklch(0.22 0.05 230);
+  --eudonia-chart-seq-2: oklch(0.32 0.08 230);
+  --eudonia-chart-seq-3: oklch(0.42 0.11 230);
+  --eudonia-chart-seq-4: oklch(0.52 0.13 230);
+  --eudonia-chart-seq-5: oklch(0.62 0.14 230);
+  --eudonia-chart-seq-6: oklch(0.72 0.13 230);
+  --eudonia-chart-seq-7: oklch(0.8 0.11 230);
+  --eudonia-chart-seq-8: oklch(0.88 0.08 230);
+  --eudonia-chart-seq-9: oklch(0.94 0.05 230);
+
+  --eudonia-chart-div-1: oklch(0.55 0.16 25);
+  --eudonia-chart-div-2: oklch(0.45 0.12 25);
+  --eudonia-chart-div-3: oklch(0.32 0.07 25);
+  --eudonia-chart-div-4: oklch(0.23 0 220);
+  --eudonia-chart-div-5: oklch(0.32 0.07 150);
+  --eudonia-chart-div-6: oklch(0.45 0.12 150);
+  --eudonia-chart-div-7: oklch(0.55 0.16 150);
+
+  --eudonia-label-color: var(--eudonia-text-muted);
+  --eudonia-subtitle-color: var(--eudonia-text-subtle);
+  --eudonia-value-color: var(--eudonia-text);
+  --eudonia-body-color: var(--eudonia-text);
+
+  --eudonia-chart-axis: oklch(1 0 0 / 0.2);
+  --eudonia-chart-grid: var(--eudonia-border);
+  --eudonia-chart-label: var(--eudonia-text-muted);
+  --eudonia-chart-treemap-stroke: var(--eudonia-fg);
+}
+
+[data-theme="dark"] * {
+  --eudonia-positive-bg: oklch(0.42 var(--eudonia-positive-c) var(--eudonia-positive-h) / 0.40);
+  --eudonia-positive-fg: oklch(0.88 var(--eudonia-positive-c) var(--eudonia-positive-h));
+  --eudonia-negative-bg: oklch(0.44 var(--eudonia-negative-c) var(--eudonia-negative-h) / 0.45);
+  --eudonia-negative-fg: oklch(0.90 var(--eudonia-negative-c) var(--eudonia-negative-h));
 }

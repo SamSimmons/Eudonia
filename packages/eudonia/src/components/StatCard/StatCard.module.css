@@ -1,7 +1,9 @@
 .body {
-  --eudonia-stat-value-size: clamp(2rem, 2.5vw, 3rem);
-  --eudonia-stat-value-weight: 400;
-  --eudonia-stat-value-tracking: -0.025em;
+  --eudonia-stat-value-size: var(--eudonia-value-size);
+  --eudonia-stat-value-weight: var(--eudonia-value-weight);
+  --eudonia-stat-value-tracking: var(--eudonia-value-tracking);
+  --eudonia-stat-value-line-height: var(--eudonia-value-line-height);
+  --eudonia-stat-value-color: var(--eudonia-value-color);
 
   flex: 1;
   display: grid;
@@ -39,19 +41,27 @@
 }
 
 .value {
-  font-size: var(--eudonia-stat-value-size, clamp(2rem, 2.5vw, 3rem));
-  font-weight: var(--eudonia-stat-value-weight, 400);
-  letter-spacing: var(--eudonia-stat-value-tracking, -0.025em);
-  line-height: 1;
-  color: var(--eudonia-card-fg);
-  font-variant-numeric: tabular-nums;
+  font-size: var(--eudonia-stat-value-size);
+  font-weight: var(--eudonia-stat-value-weight);
+  letter-spacing: var(--eudonia-stat-value-tracking);
+  line-height: var(--eudonia-stat-value-line-height);
+  color: var(--eudonia-stat-value-color);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Step the local token down (rather than `font-size` directly) so consumer
+   overrides at higher specificity continue to win. */
+@media (max-width: 1200px), (max-height: 800px) {
+  .body { --eudonia-stat-value-size: 2rem; }
+}
+@media (max-width: 900px), (max-height: 650px) {
+  .body { --eudonia-stat-value-size: 1.5rem; }
+}
+@media (max-width: 650px), (max-height: 500px) {
+  .body { --eudonia-stat-value-size: 1.125rem; }
 }
 
 .sparkline {
-  /* StatCard pairs a single large value with a quiet trend chart, so the
-     sparkline tracks the card foreground rather than the chart palette. */
-  --eudonia-sparkline-stroke: var(--eudonia-card-fg);
-
   min-width: 0;
   min-height: 0;
 }

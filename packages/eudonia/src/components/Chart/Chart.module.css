@@ -17,5 +17,7 @@
    without `eudonia/theme.css` imported. */
 .tickLabel {
   fill: var(--eudonia-chart-label, oklch(0.42 0 0));
+  font-family: inherit;
   font-size: var(--eudonia-chart-label-size, 0.7rem);
+  font-variant-numeric: tabular-nums lining-nums;
 }

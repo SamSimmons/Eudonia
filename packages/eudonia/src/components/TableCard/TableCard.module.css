@@ -4,7 +4,7 @@
   min-height: 0;
   overflow: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--eudonia-chart-grid) transparent;
+  scrollbar-color: var(--eudonia-border) transparent;
 }
 
 .scroll::-webkit-scrollbar {
@@ -13,12 +13,12 @@
 }
 
 .scroll::-webkit-scrollbar-thumb {
-  background: var(--eudonia-chart-grid);
+  background: var(--eudonia-border);
   border-radius: 3px;
 }
 
 .scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--eudonia-card-muted);
+  background: var(--eudonia-text-muted);
 }
 
 .scroll::-webkit-scrollbar-track,
@@ -30,8 +30,11 @@
   display: grid;
   width: 100%;
   align-content: start;
-  font-size: var(--eudonia-chart-label-size, 0.7rem);
-  font-variant-numeric: tabular-nums;
+  font-size: var(--eudonia-body-size);
+  font-weight: var(--eudonia-body-weight);
+  letter-spacing: var(--eudonia-body-tracking);
+  color: var(--eudonia-body-color);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .table[data-layout="content"] {
@@ -75,10 +78,13 @@
 }
 
 .th {
-  color: var(--eudonia-card-muted);
-  font-weight: 500;
+  color: var(--eudonia-label-color);
+  font-size: var(--eudonia-label-size);
+  font-weight: var(--eudonia-label-weight);
+  letter-spacing: var(--eudonia-label-tracking);
+  text-transform: var(--eudonia-label-transform);
   white-space: nowrap;
-  border-bottom: 1px solid var(--eudonia-chart-grid);
+  border-bottom: 1px solid var(--eudonia-border);
 }
 
 .headerInner {
@@ -143,15 +149,15 @@
 }
 
 .tf {
-  font-weight: 600;
-  border-top: 1px solid var(--eudonia-chart-grid);
+  font-weight: 400;
+  border-top: 1px solid var(--eudonia-border);
 }
 
 .empty {
   grid-column: 1 / -1;
   padding: 1.5em 0.75ch;
   text-align: center;
-  color: var(--eudonia-card-muted);
+  color: var(--eudonia-text-muted);
 }
 
 .emptyPlaceholder {

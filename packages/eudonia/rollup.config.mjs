@@ -35,6 +35,7 @@ export default {
   input: {
     layout: `${srcDir}/layout.ts`,
     components: `${srcDir}/components.ts`,
+    color: `${srcDir}/color.ts`,
   },
   output: {
     dir: `${import.meta.dirname}/dist`,
